@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1000" height="220" viewBox="0 0 1000 220" role="img" aria-label="AI TEAM CONSOLE">
+  <title>AI TEAM CONSOLE</title>
+  <defs>
+    <linearGradient id="g" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0" stop-color="#38BDF8"/>
+      <stop offset="1" stop-color="#A78BFA"/>
+    </linearGradient>
+    <clipPath id="c">
+      <rect x="170.0" y="40" height="110" width="0">
+        <animate attributeName="width" values="0;660;660;0" keyTimes="0;0.35;0.85;1" dur="7s" repeatCount="indefinite"/>
+      </rect>
+    </clipPath>
+  </defs>
+  <text x="500" y="120" text-anchor="middle" font-family="'Segoe UI','Helvetica Neue',Arial,sans-serif" font-size="68" font-weight="800" fill="url(#g)" textLength="640" lengthAdjust="spacingAndGlyphs" clip-path="url(#c)">AI TEAM CONSOLE</text>
+  <rect y="62" width="5" height="70" rx="2" fill="#A78BFA">
+    <animate attributeName="x" values="172.0;826.0;826.0;172.0" keyTimes="0;0.35;0.85;1" dur="7s" repeatCount="indefinite"/>
+    <animate attributeName="opacity" values="1;0;1" dur="0.9s" repeatCount="indefinite"/>
+  </rect>
+  <text x="500" y="178" text-anchor="middle" font-family="'Malgun Gothic','Apple SD Gothic Neo','Noto Sans KR',sans-serif" font-size="24" fill="#8b949e" opacity="0">Claude · Codex · Gemini 관제 화면
+    <animate attributeName="opacity" values="0;0;1;1;0" keyTimes="0;0.3;0.45;0.85;1" dur="7s" repeatCount="indefinite"/>
+  </text>
+</svg>
