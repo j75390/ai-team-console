@@ -11,20 +11,21 @@ Claude, Codex, Gemini를 한 화면에서 부르고 지켜보는 내 PC용 관�
 ## 목차
 1. [만든 이유](#1-만든-이유)
 2. [프로젝트 목표](#2-프로젝트-목표)
-3. [주요 기능](#3-주요-기능)
-4. [서비스 화면](#4-서비스-화면)
-5. [리뷰어 호출과 한도 표시](#5-리뷰어-호출과-한도-표시)
-6. [보안과 개인정보](#6-보안과-개인정보)
-7. [기술 스택](#7-기술-스택)
-8. [시스템 아키텍처와 유스케이스](#8-시스템-아키텍처와-유스케이스)
-9. [데이터 저장 명세서](#9-데이터-저장-명세서)
-10. [트러블슈팅](#10-트러블슈팅)
-11. [테스트 결과](#11-테스트-결과)
-12. [프로젝트 산출물](#12-프로젝트-산출물)
-13. [향후 개선 계획](#13-향후-개선-계획)
-14. [회고](#14-회고)
-15. [실행 방법과 폴더 구조](#15-실행-방법과-폴더-구조)
-16. [참고](#16-참고)
+3. [신경 쓴 점](#3-신경-쓴-점)
+4. [주요 기능](#4-주요-기능)
+5. [서비스 화면](#5-서비스-화면)
+6. [리뷰어 호출과 한도 표시](#6-리뷰어-호출과-한도-표시)
+7. [보안과 개인정보](#7-보안과-개인정보)
+8. [기술 스택](#8-기술-스택)
+9. [시스템 아키텍처와 유스케이스](#9-시스템-아키텍처와-유스케이스)
+10. [데이터 저장 명세서](#10-데이터-저장-명세서)
+11. [트러블슈팅](#11-트러블슈팅)
+12. [테스트 결과](#12-테스트-결과)
+13. [프로젝트 산출물](#13-프로젝트-산출물)
+14. [향후 개선 계획](#14-향후-개선-계획)
+15. [회고](#15-회고)
+16. [실행 방법과 폴더 구조](#16-실행-방법과-폴더-구조)
+17. [참고](#17-참고)
 
 ---
 
@@ -49,16 +50,64 @@ AI를 하나만 쓰지 않고 역할을 나눠 쓰고 있습니다. Claude가 �
 - 내가 연결한 AI만 호출되게 합니다. 이 앱을 여는 다른 사람이 내 토큰을 쓰지 못해야 합니다.
 - 설치와 로그인 상태가 다른 PC에서도 막히지 않고, 안 된 이유와 다음에 할 일이 화면에 나오게 합니다.
 
-## 3. 주요 기능
+## 3. 신경 쓴 점
 
-- Codex(코드 리뷰)와 Gemini(설계 리뷰)에게 같은 요청을 동시에 보내고 답을 모아 봅니다. 리뷰어는 의견만 줄 수 있고 파일을 바꾸지는 못합니다.
-- AI를 눌러 모델을 고릅니다. Codex는 호출할 때만 쓰는 모델이고, Gemini는 모델 이름, Claude는 설정 파일의 `model` 항목을 바꿉니다.
-- AI별 호출 횟수와 걸린 시간, 토큰을 보여 줍니다. Claude는 5시간과 7일 한도의 남은 비율과 초기화까지 남은 시간, Codex는 한도가 풀리는 시각, Gemini는 429가 났을 때 재시도 가능한 시각을 카드에 표시합니다.
-- 관제실 디자인에서는 호출 실패, 한도, 연결 끊김을 레이더 신호로 보여 줍니다. 신호를 눌러 추적, 식별, 보류, 재시도, 해소를 고르고, 정상 신호는 통과시킵니다.
-- 첫 실행에서 계정을 만들어야 화면이 열립니다. 상단 연동 창에서 Gemini 키와 Codex 로그인을 직접 연결해야 그 AI를 호출할 수 있습니다.
-- 바로가기를 더블클릭하면 주소창 없는 앱 창으로 열리고, 창을 닫으면 서버도 곧 꺼집니다.
+이 프로젝트에서 가장 공을 들인 부분입니다. 자세한 이야기는 뒤쪽 장에 있습니다.
 
-## 4. 서비스 화면
+1. 리뷰어를 스레드로 동시에, 그리고 읽기 전용으로 부릅니다. ([리뷰어 호출과 한도 표시](#6-리뷰어-호출과-한도-표시))
+2. 이 앱을 여는 다른 사람이 내 토큰을 쓰지 못하게 로그인과 AI별 연동으로 두 번 잠갔습니다. ([보안과 개인정보](#7-보안과-개인정보))
+3. AI마다 다른 한도 정보(Codex 응답 문구, Gemini 429, Claude 대화 기록)를 카드 하나에 모았습니다. ([리뷰어 호출과 한도 표시](#6-리뷰어-호출과-한도-표시))
+4. PC마다 다른 설치와 로그인 상태를 화면에서 확인하고, 안 된 이유와 다음에 할 일을 안내합니다. ([보안과 개인정보](#7-보안과-개인정보))
+
+## 4. 주요 기능
+
+<details>
+<summary><b>1. 리뷰어 병렬 호출</b></summary>
+
+Codex(코드 리뷰)와 Gemini(설계 리뷰)에게 같은 요청을 동시에 보내고 답을 모아 봅니다. 리뷰어는 의견만 줄 수 있고 파일을 바꾸지는 못합니다.
+
+<img src="deliverables/screenshots/04_control_room.png" width="96%">
+</details>
+
+<details>
+<summary><b>2. AI별 모델 선택</b></summary>
+
+AI를 눌러 모델을 고릅니다. Codex는 호출할 때만 쓰는 모델이고, Gemini는 모델 이름, Claude는 설정 파일의 `model` 항목을 바꿉니다.
+
+<img src="deliverables/screenshots/02_solar.png" width="96%">
+</details>
+
+<details>
+<summary><b>3. 사용량과 한도</b></summary>
+
+AI별 호출 횟수와 걸린 시간, 토큰을 보여 줍니다. Claude는 5시간과 7일 한도의 남은 비율과 초기화까지 남은 시간, Codex는 한도가 풀리는 시각, Gemini는 429가 났을 때 재시도 가능한 시각을 카드에 표시합니다.
+
+<img src="deliverables/screenshots/03_ocean.png" width="96%">
+</details>
+
+<details>
+<summary><b>4. 관제실 이상 신호 처리</b></summary>
+
+호출 실패, 한도, 연결 끊김을 레이더 신호로 보여 줍니다. 신호를 눌러 추적, 식별, 보류, 재시도, 해소를 고르고, 정상 신호는 통과시킵니다.
+
+<img src="deliverables/screenshots/04_control_room.png" width="96%">
+</details>
+
+<details>
+<summary><b>5. 로그인과 AI 연동</b></summary>
+
+첫 실행에서 계정을 만들어야 화면이 열립니다. 상단 연동 창에서 Gemini 키와 Codex 로그인을 직접 연결해야 그 AI를 호출할 수 있고, 설치와 로그인 상태가 단계별로 안내됩니다.
+
+<img src="deliverables/screenshots/01_login.png" width="48%"> <img src="deliverables/screenshots/05_connect.png" width="48%">
+</details>
+
+<details>
+<summary><b>6. 앱처럼 실행</b></summary>
+
+바로가기를 더블클릭하면 주소창 없는 앱 창으로 열리고, 창을 닫으면 서버도 곧 꺼집니다.
+</details>
+
+## 5. 서비스 화면
 
 ### 세 가지 디자인
 상단의 디자인 드롭다운에서 고릅니다. 태양계는 세 AI가 행성이 되어 태양 둘레를 돌고, 작업 중이면 행성이 빨라집니다. 심해는 입자로 그린 해파리, 가오리, 고래가 헤엄칩니다. 관제실은 레트로 레이더 화면입니다.
@@ -70,7 +119,7 @@ AI를 하나만 쓰지 않고 역할을 나눠 쓰고 있습니다. Claude가 �
 
 <img src="deliverables/screenshots/01_login.png" width="49%"> <img src="deliverables/screenshots/05_connect.png" width="49%">
 
-## 5. 리뷰어 호출과 한도 표시
+## 6. 리뷰어 호출과 한도 표시
 
 ### 리뷰어 호출
 
@@ -96,7 +145,7 @@ Codex는 한도가 다 되면 응답 문구에 풀리는 날짜와 시각이 영
 
 Claude는 서버에 물어보지 않습니다. 처음에는 이 PC에서 돌아가는 사용량 표시 도구가 쓰는 파일(`hamster-state.json`)을 읽었는데, 그러면 다른 PC에서는 아무것도 안 보였습니다. 그래서 그 파일이 없으면 Claude Code가 남기는 대화 기록(`~/.claude/projects`)에서 최근 5시간과 7일 동안 쓴 토큰을 직접 세고, 초기화 시각은 5시간 구간의 첫 메시지 시각에 5시간을 더해 추정합니다. 이 PC에서는 추정한 시각이 원래 값과 몇 분 차이였습니다. 다만 한도의 퍼센트와 비용은 서비스 쪽 값이라 기록으로는 알 수 없어서, 그런 PC에서는 토큰 수와 추정 시각만 보여 줍니다.
 
-## 6. 보안과 개인정보
+## 7. 보안과 개인정보
 
 이 앱이 내 PC에서 돌아가니까, 누군가 이 앱을 열면 내 Codex나 Gemini 토큰으로 호출할 수 있게 됩니다. 이걸 막으려고 두 겹으로 잠갔습니다.
 
@@ -117,18 +166,36 @@ fn = crypt32.CryptProtectData if protect else crypt32.CryptUnprotectData   # Win
 
 저장소에 올리기 전에는 `python -I tools/check_privacy.py . --tracked`로 개인 경로, 이메일, 키 모양의 문자열, 기록 파일이 섞이지 않았는지 검사하고, `python -I tools/make_release.py`로 허용 목록에 있는 파일만 복사한 깨끗한 사본을 만듭니다. 이 저장소도 그 사본에서 올렸습니다. 점검 결과는 [26_보안·개인정보_점검.pdf](deliverables/26_보안·개인정보_점검.pdf)에 정리했습니다.
 
-## 7. 기술 스택
+## 8. 기술 스택
 
-| 구분 | 사용한 것 |
-|---|---|
-| 서버 | Python 3 표준 라이브러리(`http.server`), 외부 패키지 없음 |
-| 화면 | HTML, CSS, JavaScript, Canvas 2D |
-| AI 연결 | Codex CLI(읽기 전용 샌드박스), Gemini REST API, Claude Code 대화 기록(사용량) |
-| 보안 | PBKDF2-SHA256, 윈도우 DPAPI, Host·Origin 검사 |
-| 실행 | `launch.pyw`(서버 숨김 기동 + Chrome/Edge `--app` 창) |
-| 개발 환경 | Windows 10, 화면 확인은 헤드리스 Chrome |
+### 서버
 
-## 8. 시스템 아키텍처와 유스케이스
+<img src="https://img.shields.io/badge/Python--3.10%2B-3776AB?style=for-the-badge&logo=python&logoColor=white">
+<img src="https://img.shields.io/badge/http.server-444444?style=for-the-badge">
+<img src="https://img.shields.io/badge/외부%20패키지--없음-2EA44F?style=for-the-badge">
+
+### 화면
+
+<img src="https://img.shields.io/badge/HTML5-E34F26?style=for-the-badge&logo=html5&logoColor=white">
+<img src="https://img.shields.io/badge/CSS3-1572B6?style=for-the-badge&logo=css3&logoColor=white">
+<img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black">
+<img src="https://img.shields.io/badge/Canvas%202D-E34F26?style=for-the-badge&logo=html5&logoColor=white">
+
+### AI 연결
+
+<img src="https://img.shields.io/badge/Codex%20CLI-412991?style=for-the-badge&logo=openai&logoColor=white">
+<img src="https://img.shields.io/badge/Gemini%20REST-8E75B2?style=for-the-badge&logo=googlegemini&logoColor=white">
+<img src="https://img.shields.io/badge/Claude%20Code-D97757?style=for-the-badge&logo=anthropic&logoColor=white">
+
+### 보안·실행
+
+<img src="https://img.shields.io/badge/PBKDF2-444444?style=for-the-badge">
+<img src="https://img.shields.io/badge/Windows%20DPAPI-0078D4?style=for-the-badge&logo=windows&logoColor=white">
+<img src="https://img.shields.io/badge/Chrome%20----app-4285F4?style=for-the-badge&logo=googlechrome&logoColor=white">
+
+개발은 Windows 10에서 했고, 화면 확인은 헤드리스 Chrome으로 했습니다.
+
+## 9. 시스템 아키텍처와 유스케이스
 
 ### 유스케이스
 
@@ -150,7 +217,7 @@ flowchart LR
 
 서버는 파이썬 표준 라이브러리의 `http.server`만 씁니다. 화면(`index.html`)은 외부 라이브러리 없이 Canvas 2D로 그리고, 관제실 쪽 코드는 Events, Targets, Commands, Panel, HUD 모듈로 나눴습니다. 구성도 PDF는 [12_시스템·서비스_구성도.pdf](deliverables/12_시스템·서비스_구성도.pdf), 유스케이스는 [10_유스케이스_다이어그램.pdf](deliverables/10_유스케이스_다이어그램.pdf)입니다.
 
-## 9. 데이터 저장 명세서
+## 10. 데이터 저장 명세서
 
 DB 없이 `data/` 폴더의 파일에 저장합니다. 이 폴더는 `.gitignore`에 들어 있습니다.
 
@@ -165,56 +232,84 @@ DB 없이 `data/` 폴더의 파일에 저장합니다. 이 폴더는 `.gitignore
 
 엑셀 원본은 [14_데이터_저장파일_명세서.xlsx](deliverables/14_데이터_저장파일_명세서.xlsx)입니다.
 
-## 10. 트러블슈팅
+## 11. 트러블슈팅
 
 <details>
-<summary>계정 만들기를 누르면 흰 화면에 {}만 떴습니다</summary>
+<summary><b>1. 계정 만들기를 누르면 흰 화면에 {}만 떴습니다</b></summary>
 
-문제: 첫 설정 화면에서 계정 만들기를 누르면 흰 화면에 `{}`만 보이고 계정이 만들어지지 않았습니다.
-원인: 서버가 `Referrer-Policy: no-referrer`를 보내서 크롬이 폼 전송에 `Origin: null`을 붙였습니다. 제가 넣어 둔 보안 검사가 그 요청을 다른 사이트에서 온 것으로 보고 거절한 것이었습니다.
-해결: 헤더를 `same-origin`으로 바꿨습니다. 같은 주소에서 보낸 요청에는 진짜 주소가 붙고, 다른 사이트로는 여전히 아무 정보도 나가지 않습니다. 보안 검사는 그대로 뒀습니다.
+1.1 문제 상황<br>
+첫 설정 화면에서 계정 만들기를 누르면 흰 화면에 `{}`만 보이고 계정이 만들어지지 않았습니다.
+
+1.2 원인<br>
+서버가 `Referrer-Policy: no-referrer`를 보내서 크롬이 폼 전송에 `Origin: null`을 붙였습니다. 제가 넣어 둔 보안 검사가 그 요청을 다른 사이트에서 온 것으로 보고 거절한 것이었습니다.
+
+1.3 해결<br>
+헤더를 `same-origin`으로 바꿨습니다. 같은 주소에서 보낸 요청에는 진짜 주소가 붙고, 다른 사이트로는 여전히 아무 정보도 나가지 않습니다. 보안 검사는 그대로 뒀습니다.
 </details>
 
 <details>
-<summary>python -I로 실행하면 로그인 모듈을 찾지 못했습니다</summary>
+<summary><b>2. python -I로 실행하면 로그인 모듈을 찾지 못했습니다</b></summary>
 
-문제: `python -I server.py`로 띄우면 `auth`, `pages` 모듈을 가져오지 못했습니다.
-원인: 격리 모드(`-I`)는 스크립트가 있는 폴더를 import 경로에 넣지 않습니다.
-해결: 서버가 시작할 때 자기 폴더를 경로에 직접 추가합니다.
+2.1 문제 상황<br>
+`python -I server.py`로 띄우면 `auth`, `pages` 모듈을 가져오지 못했습니다.
+
+2.2 원인<br>
+격리 모드(`-I`)는 스크립트가 있는 폴더를 import 경로에 넣지 않습니다.
+
+2.3 해결<br>
+서버가 시작할 때 자기 폴더를 경로에 직접 추가합니다.
 </details>
 
 <details>
-<summary>환경 변수의 키가 연동 없이도 쓰일 수 있었습니다</summary>
+<summary><b>3. 환경 변수의 키가 연동 없이도 쓰일 수 있었습니다</b></summary>
 
-문제: 환경 변수에 `GEMINI_API_KEY`가 있으면 연동 창에서 연결하지 않아도 Gemini가 호출됐습니다.
-원인: 처음에는 편하게 환경 변수를 그대로 읽었습니다. 그런데 이러면 이 앱을 여는 누구나 내 키로 호출할 수 있습니다.
-해결: 환경 변수와 이 PC의 기존 Codex 로그인은 기본 꺼짐으로 바꾸고, 연동 창에서 직접 켜야만 쓰이게 했습니다. 연결 없이 호출하면 외부 서비스를 부르지 않고 바로 실패하는지는 시험으로 확인합니다.
+3.1 문제 상황<br>
+환경 변수에 `GEMINI_API_KEY`가 있으면 연동 창에서 연결하지 않아도 Gemini가 호출됐습니다.
+
+3.2 원인<br>
+처음에는 편하게 환경 변수를 그대로 읽었습니다. 그런데 이러면 이 앱을 여는 누구나 내 키로 호출할 수 있습니다.
+
+3.3 해결<br>
+환경 변수와 이 PC의 기존 Codex 로그인은 기본 꺼짐으로 바꾸고, 연동 창에서 직접 켜야만 쓰이게 했습니다. 연결 없이 호출하면 외부 서비스를 부르지 않고 바로 실패하는지는 시험으로 확인합니다.
 </details>
 
 <details>
-<summary>다른 PC에서는 Claude 사용량이 안 보였습니다</summary>
+<summary><b>4. 다른 PC에서는 Claude 사용량이 안 보였습니다</b></summary>
 
-문제: 사용량 카드가 이 PC에서는 나오는데 다른 PC에서는 비어 있었습니다.
-원인: 이 PC에서만 돌아가는 사용량 표시 도구의 파일을 읽고 있었습니다.
-해결: 그 파일이 없으면 Claude Code의 대화 기록에서 토큰을 직접 세도록 했습니다. 대신 한도 퍼센트와 비용은 서비스 쪽 값이라 알 수 없어서, 그런 PC에서는 토큰 수와 추정 초기화 시각만 보여 줍니다.
+4.1 문제 상황<br>
+사용량 카드가 이 PC에서는 나오는데 다른 PC에서는 비어 있었습니다.
+
+4.2 원인<br>
+이 PC에서만 돌아가는 사용량 표시 도구의 파일을 읽고 있었습니다.
+
+4.3 해결<br>
+그 파일이 없으면 Claude Code의 대화 기록에서 토큰을 직접 세도록 했습니다. 대신 한도 퍼센트와 비용은 서비스 쪽 값이라 알 수 없어서, 그런 PC에서는 토큰 수와 추정 초기화 시각만 보여 줍니다.
 </details>
 
 <details>
-<summary>설치되지 않은 PC에서는 어떻게 해야 하는지 알 수 없었습니다</summary>
+<summary><b>5. 설치되지 않은 PC에서는 어떻게 해야 하는지 알 수 없었습니다</b></summary>
 
-문제: Codex CLI나 Claude Code가 없는 PC에서 연동 창을 열어도 무엇을 해야 하는지 안내가 없었습니다.
-해결: 연동 창이 설치와 로그인 여부를 확인해서 단계별로 안내합니다. 설치 명령은 복사할 수 있게 보여 주고, 로그인 버튼은 새 터미널 창으로 해당 명령을 열어 줍니다. 맥과 리눅스처럼 창을 자동으로 열 수 없는 환경에서는 명령을 직접 실행하라는 안내가 뜹니다.
+5.1 문제 상황<br>
+Codex CLI나 Claude Code가 없는 PC에서 연동 창을 열어도 무엇을 해야 하는지 안내가 없었습니다.
+
+5.2 해결<br>
+연동 창이 설치와 로그인 여부를 확인해서 단계별로 안내합니다. 설치 명령은 복사할 수 있게 보여 주고, 로그인 버튼은 새 터미널 창으로 해당 명령을 열어 줍니다. 맥과 리눅스처럼 창을 자동으로 열 수 없는 환경에서는 명령을 직접 실행하라는 안내가 뜹니다.
 </details>
 
 <details>
-<summary>다른 창에 가려진 앱 창이 거의 멈췄습니다</summary>
+<summary><b>6. 다른 창에 가려진 앱 창이 거의 멈췄습니다</b></summary>
 
-문제: 화면 촬영이 계속 시간 초과가 났고, 애니메이션이 1초에 한 장쯤으로 느려 보였습니다.
-원인: 다른 창에 가려진 창은 브라우저가 그리기 속도를 크게 줄입니다.
-해결: 확인용 화면은 헤드리스 Chrome으로 찍습니다.
+6.1 문제 상황<br>
+화면 촬영이 계속 시간 초과가 났고, 애니메이션이 1초에 한 장쯤으로 느려 보였습니다.
+
+6.2 원인<br>
+다른 창에 가려진 창은 브라우저가 그리기 속도를 크게 줄입니다.
+
+6.3 해결<br>
+확인용 화면은 헤드리스 Chrome으로 찍습니다.
 </details>
 
-## 11. 테스트 결과
+## 12. 테스트 결과
 
 ```bash
 python -I tests/test_auth.py       # 로그인 19개
@@ -338,7 +433,7 @@ AI 연동
 
 캔버스 화면 자체의 자동 시험은 없습니다. 엑셀 원본은 [19_테스트·검증_결과.xlsx](deliverables/19_테스트·검증_결과.xlsx)입니다.
 
-## 12. 프로젝트 산출물
+## 13. 프로젝트 산출물
 
 프로젝트를 진행하면서 만든 문서와 표를 여기에 모았습니다. 원본 파일은 [deliverables](deliverables/) 폴더에 번호를 붙여 두었고(PDF와 엑셀), 이 README의 표와 그림은 그 내용을 옮긴 것입니다.
 
@@ -445,22 +540,29 @@ AI 연동
 
 <img src="docs/images/slide-cover.png" width="24%"> <img src="docs/images/slide-architecture.png" width="24%"> <img src="docs/images/slide-code.png" width="24%"> <img src="docs/images/slide-test.png" width="24%">
 
-## 13. 향후 개선 계획
+## 14. 향후 개선 계획
 
+### 1. 실제 계정으로 확인
 - 실제 Codex 로그인(`codex login` 창)과 Gemini 키 확인을 계정으로 직접 해 봅니다. 지금은 키 형식, 암호화, 해제만 가짜 키로 시험했습니다.
 - Codex가 정상 응답을 주는 경우의 토큰 표시를 한도가 풀린 뒤 확인하고, 실제 Gemini 429 응답으로 재시도 시각 표시를 확인합니다.
+
+### 2. 기능 보완
 - 화면 구성에 있는 검증기(VERIFIER) 단계를 실제로 동작하게 만듭니다.
+
+### 3. 시험과 환경
 - 캔버스 화면에 대한 자동 시험을 추가합니다.
 - 맥과 리눅스에서도 돌아가게 합니다. 지금은 DPAPI, 바로가기, 창 열기가 윈도우 기준입니다.
+
+### 4. 기록
 - 시연 영상을 찍어 이 README에 넣습니다.
 
-## 14. 회고
+## 15. 회고
 
 이 프로젝트는 하나 만들 때마다 "남이 이 앱을 열면 어떻게 되나"를 새로 따져 보게 된 과정이었습니다. 처음에는 편하게 환경 변수의 키를 읽었는데, 내 PC에서 돌아가는 앱이 내 토큰을 쓰는 순간 누구나 호출할 수 있다는 걸 알고 나서 로그인과 연동 창을 넣었습니다. 보안 쪽은 자동 시험으로 확인할 수 있어서 시험부터 써 보는 편이 오히려 빨랐습니다.
 
 반대로 확인하지 못한 게 분명히 남았습니다. 실제 계정으로 Codex 로그인과 Gemini 키 확인을 해 보지 못했고, 화면은 캔버스에 그리는 것이라 자동 시험이 없습니다. 가짜 데이터로 찍은 스크린샷이 실제 화면과 같다고는 말할 수 있지만, 실제 서비스 응답이 들어왔을 때 모든 경우가 맞다고까지는 말하기 어렵습니다. 그 부분은 앞으로 계정이 풀리면 하나씩 확인할 계획입니다.
 
-## 15. 실행 방법과 폴더 구조
+## 16. 실행 방법과 폴더 구조
 
 Python 3.10 이상과 Chrome 또는 Edge가 있으면 됩니다. 설치할 패키지는 없습니다.
 
@@ -491,7 +593,7 @@ deliverables/    산출물(PDF·엑셀), 발표 PPT, 스크린샷
 docs/            업로드 계획, WBS, README용 그림
 ```
 
-## 16. 참고
+## 17. 참고
 
 - 화면 구성은 유튜브 '디렉터스AI'의 "AI DEV DIRECTOR" 영상에서 본 배치를 참고했습니다. 영상의 소스 코드와 디자인은 쓰지 않았습니다.
 - 글꼴은 [Pretendard](https://github.com/orioncactus/pretendard)와 [JetBrains Mono](https://www.jetbrains.com/lp/mono/)(둘 다 SIL OFL)입니다.
