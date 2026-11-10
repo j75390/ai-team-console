@@ -1,0 +1,34 @@
+# ── 개인 기록·계정: 절대 올리지 않는다 ──
+data/
+auth.json
+runs.jsonl
+events.jsonl
+models.json
+connections.json
+codex_home/
+*.log
+
+# ── 비밀 값 ──
+.env
+.env.*
+*.pem
+*.key
+*.pfx
+
+# ── 내 PC에서만 의미 있는 파일 ──
+*.lnk
+tools/private_terms.txt
+release/
+
+# ── 파이썬·편집기 ──
+__pycache__/
+*.pyc
+.venv/
+venv/
+.idea/
+.vscode/
+
+# ── 만든 압축 파일 ──
+*.7z
+*.zip
+deliverables/_tmp.html
