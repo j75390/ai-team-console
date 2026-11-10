@@ -25,7 +25,6 @@ Claude, Codex, Gemini를 한 화면에서 부르고 지켜보는 내 PC용 관�
 14. [향후 개선 계획](#14-향후-개선-계획)
 15. [회고](#15-회고)
 16. [실행 방법과 폴더 구조](#16-실행-방법과-폴더-구조)
-17. [참고](#17-참고)
 
 ---
 
@@ -612,8 +611,3 @@ tools/           데모 데이터, 스크린샷, 개인정보 점검, 깨끗한 
 deliverables/    산출물(PDF·엑셀), 발표 PPT, 스크린샷
 docs/            업로드 계획, WBS, README용 그림
 ```
-
-## 17. 참고
-
-- 화면 구성은 유튜브 '디렉터스AI'의 "AI DEV DIRECTOR" 영상에서 본 배치를 참고했습니다. 영상의 소스 코드와 디자인은 쓰지 않았습니다.
-- 글꼴은 [Pretendard](https://github.com/orioncactus/pretendard)와 [JetBrains Mono](https://www.jetbrains.com/lp/mono/)(둘 다 SIL OFL)입니다.
