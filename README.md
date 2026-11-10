@@ -8,8 +8,6 @@ Claude, Codex, Gemini를 한 화면에서 부르고 지켜보는 내 PC용 관�
 
 <img src="deliverables/screenshots/04_control_room.png" width="49%"> <img src="deliverables/screenshots/03_ocean.png" width="49%">
 
-화면은 전부 가짜(데모) 데이터로 찍었습니다. 계정, 키, 호출 기록은 `data/` 폴더에만 저장하고 깃에는 올리지 않습니다.
-
 ## 목차
 1. [만든 이유](#1-만든-이유)
 2. [프로젝트 목표](#2-프로젝트-목표)
