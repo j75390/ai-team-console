@@ -1,0 +1,1382 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TRINITY · AI 팀 관제</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.19/400.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fontsource/jetbrains-mono@5.0.19/700.css">
+<style>
+:root { --bg:#03060c; --panel:rgba(12,19,31,.78); --card:rgba(16,25,40,.8); --line:rgba(90,120,160,.22); --ink:#e8eef7; --sub:#7f90a8; --dim:#46556b;
+  --green:#34e0b0; --blue:#6c9dff; --orange:#ff8f5e; --amber:#f5b942; --bad:#ff5c6c; }
+* { box-sizing:border-box; }
+html,body { height:100%; }
+body { margin:0; background:radial-gradient(ellipse at 50% 42%, #0a1424 0%, #03060c 68%); color:var(--ink); font-family:"Pretendard",system-ui,sans-serif; overflow:hidden; }
+body::before { content:""; position:fixed; inset:0; background-image:radial-gradient(rgba(120,150,190,.13) 1px, transparent 1px); background-size:28px 28px; pointer-events:none; }
+button { font:inherit; color:inherit; cursor:pointer; }
+
+/* 상단 바 */
+.top { position:fixed; left:0; right:0; top:0; height:46px; display:flex; align-items:center; gap:12px; padding:0 20px; z-index:6; font-size:11px; letter-spacing:.16em; color:var(--sub); }
+.top .dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 10px var(--green); }
+.top b { color:var(--ink); } .top .sp { flex:1; }
+.seg { display:inline-flex; border:1px solid var(--line); border-radius:7px; overflow:hidden; background:rgba(8,13,22,.6); }
+.seg button { background:transparent; border:0; padding:5px 11px; font-size:11px; letter-spacing:.04em; color:var(--sub); }
+.seg button.on { background:rgba(108,157,255,.16); color:var(--ink); box-shadow:inset 0 0 0 1px rgba(108,157,255,.5); border-radius:6px; }
+.badge { padding:3px 9px; border-radius:99px; border:1px solid var(--line); font-size:10.5px; letter-spacing:.06em; color:var(--sub); }
+.badge.ok { color:var(--green); border-color:rgba(52,224,176,.4); background:rgba(52,224,176,.08); }
+.badge.run { color:var(--blue); border-color:rgba(108,157,255,.45); background:rgba(108,157,255,.1); }
+.badge.bad { color:var(--bad); border-color:rgba(255,92,108,.4); background:rgba(255,92,108,.08); }
+.badge.lim { color:var(--amber); border-color:rgba(245,185,66,.4); background:rgba(245,185,66,.08); }
+
+.app { position:fixed; inset:46px 0 0 0; display:grid; grid-template-columns:318px 1fr 336px; gap:14px; padding:0 14px 14px; }
+.panel { background:var(--panel); border:1px solid var(--line); border-radius:14px; backdrop-filter:blur(6px); min-height:0; }
+.hd { font-size:10.5px; letter-spacing:.2em; color:var(--sub); font-weight:600; }
+.scroll { overflow:auto; scrollbar-width:thin; scrollbar-color:#223048 transparent; }
+
+/* 왼쪽 */
+.left { display:flex; flex-direction:column; }
+.left .in { padding:16px; }
+.status h1 { margin:8px 0 0; font-size:21px; line-height:1.3; letter-spacing:-.02em; }
+.status p { margin:6px 0 0; color:var(--sub); font-size:12px; }
+.timer { margin-top:10px; font-size:30px; font-weight:700; letter-spacing:.06em; font-variant-numeric:tabular-nums; }
+.timer small { font-size:11px; color:var(--sub); margin-left:6px; letter-spacing:0; font-weight:500; }
+.mission { margin-top:14px; border:1px solid var(--line); border-radius:10px; background:var(--card); padding:12px; }
+.mission .r { display:flex; justify-content:space-between; align-items:center; font-size:11px; color:var(--sub); letter-spacing:.08em; }
+.mission .txt { margin:8px 0; font-size:12.5px; line-height:1.55; color:#c6d2e2; display:-webkit-box; -webkit-line-clamp:4; -webkit-box-orient:vertical; overflow:hidden; word-break:break-word; }
+.steps { display:flex; gap:6px; } .steps i { font-style:normal; flex:1; text-align:center; font-size:11px; padding:4px 0; border-radius:6px; border:1px solid var(--line); color:var(--dim); }
+.steps i.done { color:var(--green); border-color:rgba(52,224,176,.5); background:rgba(52,224,176,.08); }
+.steps i.now { color:var(--ink); border-color:var(--blue); background:rgba(108,157,255,.12); }
+.mission .meta { margin-top:8px; font-size:11px; color:var(--sub); }
+.sub-hd { display:flex; justify-content:space-between; align-items:center; margin:16px 0 8px; }
+textarea { width:100%; height:78px; resize:vertical; background:rgba(5,9,16,.7); border:1px solid var(--line); border-radius:8px; color:var(--ink); padding:9px 11px; font:inherit; font-size:12.5px; }
+textarea:focus { outline:none; border-color:var(--green); box-shadow:0 0 0 3px rgba(52,224,176,.12); }
+.chk { display:flex; gap:12px; margin:8px 0; font-size:12.5px; color:var(--sub); } .chk label { display:flex; align-items:center; gap:5px; cursor:pointer; } .chk input { accent-color:var(--green); }
+button.go { width:100%; background:var(--green); color:#03140e; border:0; border-radius:8px; padding:10px; font-weight:800; letter-spacing:.02em; }
+button.go:disabled { opacity:.4; cursor:default; }
+.hint { color:var(--dim); font-size:11px; margin-top:7px; }
+.item { border-left:2px solid var(--c,#456); padding:1px 0 1px 10px; margin-bottom:12px; }
+.item .n { display:flex; justify-content:space-between; font-size:11.5px; font-weight:700; color:var(--c); } .item .n small { color:var(--sub); font-weight:500; }
+.item pre { margin:5px 0 0; white-space:pre-wrap; word-break:break-word; font:11.5px/1.6 "Pretendard",monospace; color:#b4c1d3; max-height:200px; overflow:auto; }
+.log .row { display:flex; align-items:center; gap:8px; padding:7px 8px; margin-bottom:5px; border:1px solid var(--line); border-radius:7px; background:rgba(10,16,27,.7); font-size:11.5px; }
+.log .tag { font-weight:700; letter-spacing:.02em; min-width:74px; } .log .who { color:var(--sub); flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; } .log .ago { color:var(--dim); font-size:10.5px; }
+
+/* 가운데 */
+.center { position:relative; background:transparent; border:0; backdrop-filter:none; overflow:hidden; }
+canvas { position:absolute; inset:0; width:100%; height:100%; }
+.stages { position:absolute; left:12px; right:12px; top:8px; display:flex; gap:10px; opacity:0; transition:opacity .5s; pointer-events:none; z-index:2; }
+.stages.on { opacity:1; }
+.sc { flex:1; min-width:0; max-width:150px; margin:0 auto; padding:8px 12px 9px; border-radius:9px; border:1.5px solid var(--cc); background:rgba(8,13,22,.85); box-shadow:0 0 18px color-mix(in srgb, var(--cc) 25%, transparent); opacity:.45; transition:opacity .3s; }
+.sc.on { opacity:1; box-shadow:0 0 26px color-mix(in srgb, var(--cc) 45%, transparent); }
+.sc small { display:block; font-size:9.5px; letter-spacing:.14em; font-weight:700; color:var(--cc); } .sc b { font-size:19px; letter-spacing:-.02em; }
+.brand { position:absolute; padding:7px 14px; border:1.5px solid var(--cc); border-radius:8px; background:rgba(8,13,22,.8); box-shadow:0 0 18px color-mix(in srgb, var(--cc) 22%, transparent); z-index:2; }
+.brand small { display:block; font-size:9px; letter-spacing:.22em; color:var(--sub); } .brand b { font-size:19px; letter-spacing:.02em; color:var(--cc); }
+.core-label { position:absolute; left:22px; bottom:76px; z-index:2; } .core-label b { display:block; font-size:34px; letter-spacing:-.02em; line-height:1.1; }
+.core-label span { font-size:11px; color:var(--sub); letter-spacing:.08em; }
+.core-label small { display:none; font-size:10px; letter-spacing:.18em; color:var(--sub); margin-top:6px; }
+.pipe { position:absolute; left:50%; bottom:16px; transform:translateX(-50%); display:flex; align-items:center; background:var(--panel); border:1px solid var(--line); border-radius:99px; padding:9px 20px; z-index:2; }
+.pipe .s { display:flex; align-items:center; gap:7px; white-space:nowrap; font-size:11.5px; color:var(--dim); } .pipe .s i { width:9px; height:9px; border-radius:50%; border:1.5px solid var(--dim); }
+.pipe .s small { display:block; font-size:8.5px; letter-spacing:.14em; }
+.pipe .s.on { color:var(--ink); } .pipe .s.on i { background:var(--green); border-color:var(--green); box-shadow:0 0 10px var(--green); }
+.pipe .s.done { color:var(--sub); } .pipe .s.done i { background:var(--sub); border-color:var(--sub); }
+.pipe .bar { width:26px; height:1px; background:var(--line); margin:0 7px; }
+
+/* 오른쪽 */
+.right { display:flex; flex-direction:column; }
+.right .sec { padding:14px 16px; border-bottom:1px solid var(--line); } .right .sec:last-child { border:0; }
+.right .top2 { display:flex; justify-content:space-between; align-items:center; }
+.big { font-size:34px; font-weight:800; letter-spacing:-.03em; margin-top:8px; line-height:1; } .big small { font-size:12px; color:var(--sub); font-weight:500; letter-spacing:0; margin-left:4px; }
+.sumline { font-size:11.5px; color:var(--sub); margin-top:7px; }
+.stack { display:flex; height:4px; border-radius:9px; overflow:hidden; margin-top:10px; background:rgba(120,150,190,.14); } .stack i { display:block; height:100%; }
+.role { margin-top:10px; border:1px solid var(--line); border-radius:9px; background:var(--card); padding:10px 12px; }
+.role .r { display:flex; justify-content:space-between; align-items:baseline; font-size:10px; letter-spacing:.14em; color:var(--sub); } .role .r b { font-size:12px; letter-spacing:.02em; }
+.role .nums { display:grid; grid-template-columns:repeat(3,1fr); margin:7px 0 8px; } .role .nums div { font-size:17px; font-weight:700; } .role .nums small { display:block; font-size:10px; font-weight:500; color:var(--sub); }
+.meter { height:3px; border-radius:9px; background:rgba(120,150,190,.15); overflow:hidden; } .meter i { display:block; height:100%; background:var(--c); }
+.call { display:flex; justify-content:space-between; gap:10px; padding:8px 0; border-top:1px solid var(--line); font-size:11.5px; cursor:pointer; } .call:first-of-type { border-top:0; }
+.call .a { font-weight:700; } .call .b { color:var(--sub); font-size:10.5px; } .call .t { color:var(--dim); font-size:10.5px; text-align:right; white-space:nowrap; } .call:hover .b { color:var(--ink); }
+.conn { display:flex; justify-content:space-between; align-items:center; padding:6px 0; font-size:12px; color:var(--sub); } .conn i { width:8px; height:8px; border-radius:50%; display:inline-block; margin-right:8px; background:var(--dim); }
+.conn.ok i { background:var(--green); box-shadow:0 0 8px var(--green); } .conn.bad i { background:var(--bad); } .conn.lim i { background:var(--amber); }
+.conn b { font-size:10.5px; letter-spacing:.06em; font-weight:600; }
+.role { cursor:pointer; transition:border-color .15s; } .role:hover { border-color:var(--c); } .lim { display:flex; justify-content:space-between; align-items:baseline; margin-top:9px; font-size:11.5px; color:var(--sub); } .lim b { font-size:13px; } .limsub { font-size:11px; color:var(--sub); margin-top:3px; }
+.role .mdl { font-size:11px; color:var(--sub); margin-top:3px; }
+.pop { position:absolute; z-index:8; width:300px; max-height:calc(100% - 24px); overflow:auto; background:rgba(9,15,26,.97); border:1.5px solid var(--cc,var(--line)); border-radius:12px; padding:14px; box-shadow:0 12px 40px rgba(0,0,0,.6), 0 0 24px color-mix(in srgb, var(--cc) 25%, transparent); }
+.pop[hidden] { display:none; }
+.pop h3 { margin:0; display:flex; justify-content:space-between; align-items:center; font-size:16px; } .pop h3 small { font-size:9.5px; letter-spacing:.18em; color:var(--sub); display:block; font-weight:600; }
+.pop h3 button { background:transparent; border:0; color:var(--sub); font-size:18px; line-height:1; }
+.pop .cur { margin:10px 0 8px; font-size:12px; color:var(--sub); } .pop .cur b { color:var(--ink); font-size:13px; }
+.pop .opts { max-height:190px; overflow:auto; border:1px solid var(--line); border-radius:8px; }
+.pop .opt { display:flex; justify-content:space-between; align-items:center; gap:8px; width:100%; text-align:left; background:transparent; border:0; border-bottom:1px solid var(--line); padding:7px 10px; font-size:12px; }
+.pop .opt:last-child { border-bottom:0; } .pop .opt small { color:var(--dim); font-size:10.5px; } .pop .opt:hover { background:rgba(120,150,190,.1); }
+.pop .opt.on { background:color-mix(in srgb, var(--cc) 14%, transparent); color:var(--ink); box-shadow:inset 2px 0 0 var(--cc); }
+.pop .custom { display:flex; gap:6px; margin-top:8px; } .pop .custom input { flex:1; min-width:0; background:rgba(5,9,16,.8); border:1px solid var(--line); border-radius:7px; color:var(--ink); padding:6px 9px; font:inherit; font-size:12px; }
+.pop .custom button, .pop .reset { background:transparent; border:1px solid var(--line); border-radius:7px; color:var(--ink); padding:6px 10px; font-size:11.5px; } .pop .custom button:hover, .pop .reset:hover { border-color:var(--cc); }
+.pop .use { display:grid; grid-template-columns:repeat(3,1fr); gap:6px; margin-top:12px; } .pop .use div { border:1px solid var(--line); border-radius:8px; padding:7px 8px; font-size:15px; font-weight:700; } .pop .use small { display:block; font-size:10px; color:var(--sub); font-weight:500; }
+.pop .msg { margin-top:9px; font-size:11px; color:var(--sub); line-height:1.5; } .pop .msg.ok { color:var(--green); } .pop .msg.bad { color:var(--bad); }
+/* ===== 테마: 우주 관제실 (MISSION) — 앰버 한 색 + 고정폭 글꼴 + 각진 모서리 ===== */
+body.mission { --bg:#050607; --panel:rgba(10,9,6,.86); --card:rgba(18,15,8,.85); --line:rgba(255,176,32,.22); --ink:#ffe9c2; --sub:#a8905a; --dim:#5e5030;
+  --green:#ffb020; --blue:#ffb020; font-family:"JetBrains Mono","Pretendard",ui-monospace,Consolas,monospace; background:radial-gradient(ellipse at 50% 45%, #120d04 0%, #050607 70%); }
+body.mission::before { background-image:linear-gradient(rgba(255,176,32,.045) 1px, transparent 1px), linear-gradient(90deg, rgba(255,176,32,.045) 1px, transparent 1px); background-size:40px 40px; }
+body.mission .panel, body.mission .mission, body.mission .role, body.mission .sc, body.mission .brand, body.mission .pop, body.mission .row, body.mission .pipe, body.mission textarea, body.mission .seg, body.mission .opts, body.mission .use div { border-radius:2px; }
+body.mission .panel { border-color:rgba(255,176,32,.3); }
+body.mission .center { border:0; }
+body.mission .hd, body.mission .sc small, body.mission .brand small, body.mission .pipe small, body.mission .role .r, body.mission .core-label span { letter-spacing:.2em; }
+body.mission .sc { --cc:#ffb020 !important; } body.mission .brand { --cc:#ffb020 !important; background:rgba(14,10,3,.9); }
+body.mission .brand b { color:#ffe9c2; letter-spacing:.12em; font-size:16px; }
+body.mission .sc.on { background:rgba(255,176,32,.12); }
+body.mission .core-label b { letter-spacing:.06em; color:#ffb020; text-shadow:0 0 14px rgba(255,176,32,.45); }
+body.mission button.go { color:#1a1200; border-radius:2px; }
+body.mission .seg button.on { background:rgba(255,176,32,.16); box-shadow:inset 0 0 0 1px rgba(255,176,32,.55); }
+body.mission .badge.ok, body.mission .badge.run { color:#ffb020; border-color:rgba(255,176,32,.45); background:rgba(255,176,32,.08); }
+body.mission .center::after { content:""; position:absolute; inset:0; pointer-events:none; background:repeating-linear-gradient(0deg, rgba(255,176,32,.035) 0 1px, transparent 1px 3px); z-index:1; }
+body.solar { background:radial-gradient(ellipse at 50% 46%, #0c1233 0%, #060a1d 55%, #02030a 100%); }
+body.solar .brand { border-radius:10px; }
+/* ===== 관제실: 목표물 패널 · 조작 바 · 저장된 로그 ===== */
+.mcbar { display:none !important; position:absolute; left:14px; top:84px; z-index:6; flex-direction:column; gap:6px; } body.mission .mcbar { display:none !important; }
+.mcbtn { background:rgba(0,0,0,.4); border:1px solid var(--line); border-radius:4px; color:var(--ink); padding:6px 11px; font-size:11px; letter-spacing:.04em; text-align:left; } .mcbtn:hover { border-color:var(--green); color:var(--green); }
+.cmds { display:flex; flex-wrap:wrap; gap:6px; margin-top:10px; } .cmds button { flex:1 1 auto; background:transparent; border:1px solid var(--line); border-radius:4px; color:var(--ink); padding:7px 10px; font-size:12px; font-weight:600; } .cmds button:hover { border-color:var(--cc); color:var(--cc); }
+.mclog { position:absolute; left:14px; top:150px; width:320px; max-height:320px; overflow:auto; z-index:7; background:var(--bg); border:1px solid var(--line); border-radius:6px; padding:8px 10px; font-size:11px; line-height:1.5; }
+.mclog[hidden] { display:none; } .mclog .h { color:var(--sub); letter-spacing:.14em; font-size:9.5px; margin-bottom:6px; } .mclog .r { padding:4px 0; border-top:1px solid var(--line); color:var(--ink); display:block; word-break:break-word; } .mclog .t { color:var(--sub); margin-right:6px; } .mclog b { color:var(--green); margin-right:4px; } .mclog i { font-style:normal; color:var(--sub); }
+/* ===== AI 연동 창 ===== */
+.connpanel { position:fixed; top:52px; right:14px; width:410px; max-height:calc(100vh - 70px); overflow:auto; z-index:70; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:14px 16px; box-shadow:0 18px 50px rgba(0,0,0,.6); }
+.connpanel[hidden] { display:none; } .connpanel .ch { display:flex; justify-content:space-between; align-items:center; font-size:15px; } .connpanel .ch button { background:transparent; border:0; color:var(--sub); font-size:20px; line-height:1; }
+.connpanel .cnote { color:var(--sub); font-size:12px; margin:8px 0 12px; line-height:1.6; } .connpanel .crow { border-top:1px solid var(--line); padding:12px 0; }
+.connpanel .ct { display:flex; align-items:center; gap:8px; margin-bottom:8px; font-size:13.5px; } .connpanel .ct small { color:var(--sub); }
+.cbadge { margin-left:auto; padding:2px 9px; border-radius:99px; border:1px solid var(--line); color:var(--sub); font-size:11px; } .cbadge.on { color:var(--green); border-color:color-mix(in srgb, var(--green) 50%, transparent); background:color-mix(in srgb, var(--green) 10%, transparent); }
+.connpanel .cb { display:flex; gap:6px; flex-wrap:wrap; } .connpanel input[type=password] { flex:1; min-width:0; background:rgba(5,9,16,.8); border:1px solid var(--line); border-radius:7px; color:var(--ink); padding:7px 10px; font:inherit; font-size:12.5px; }
+.cbtn { background:transparent; border:1px solid var(--line); border-radius:7px; color:var(--ink); padding:7px 11px; font-size:12px; font-weight:600; } .cbtn:hover:not(:disabled) { border-color:var(--green); color:var(--green); } .cbtn:disabled { opacity:.4; }
+.copt { display:flex; align-items:center; gap:7px; margin-top:9px; font-size:12px; color:var(--sub); } .copt small { color:var(--dim); } .cwarn, .cnote2 { margin-top:8px; font-size:11.5px; color:var(--sub); line-height:1.55; } .cwarn { color:#f5b942; }
+.cmd { display:flex; align-items:center; gap:8px; margin-top:7px; padding:6px 8px; border:1px solid var(--line, rgba(120,140,170,.25)); border-radius:8px; background:rgba(0,0,0,.25); } .cmd code { flex:1; font-size:11px; word-break:break-all; user-select:all; } .cnote2 code { font-size:11px; user-select:all; } .cnote2 a { color:var(--green, #34e0b0); }
+.cmsg { min-height:18px; margin-top:6px; font-size:12px; color:var(--green); } .cmsg.bad { color:#ff7b86; }
+/* ===== 디자인 선택 드롭다운 ===== */
+.dd { position:relative; }
+.ddbtn { background:rgba(8,13,22,.6); border:1px solid var(--line); border-radius:8px; padding:5px 12px; font-size:11.5px; color:var(--sub); letter-spacing:.04em; display:inline-flex; align-items:center; gap:4px; }
+.ddbtn b { color:var(--ink); font-weight:700; } .ddbtn .car { font-size:10px; transition:transform .15s; } .ddbtn[aria-expanded="true"] .car { transform:rotate(180deg); } .ddbtn:hover, .ddbtn[aria-expanded="true"] { border-color:var(--green); }
+.ddmenu { position:absolute; right:0; top:calc(100% + 8px); width:290px; background:var(--bg); border:1px solid var(--line); border-radius:12px; padding:6px; box-shadow:0 16px 44px rgba(0,0,0,.55); z-index:30; letter-spacing:0; }
+.ddmenu[hidden] { display:none; }
+.ddmenu button { display:flex; align-items:center; gap:12px; width:100%; text-align:left; background:transparent; border:0; border-radius:8px; padding:9px 10px; color:var(--ink); }
+.ddmenu button:hover { background:rgba(120,150,190,.12); } .ddmenu button.on { background:rgba(120,150,190,.16); box-shadow:inset 2px 0 0 var(--green); }
+.ddmenu i { width:30px; height:30px; border-radius:8px; border:1px solid var(--line); flex:none; }
+.ddmenu span { display:flex; flex-direction:column; } .ddmenu b { font-size:13px; } .ddmenu small { font-size:11px; color:var(--sub); margin-top:1px; }
+body.mission.light .ddbtn { background:#fff; } body.mission.light .ddmenu { box-shadow:0 16px 44px rgba(40,60,90,.2); }
+/* ===== 테마: 라이트(미니멀) / 레트로(터미널) — 관제실 레이더 화면을 다른 색으로 ===== */
+body.mission.light { --bg:#eef1f5; --panel:rgba(255,255,255,.92); --card:#ffffff; --line:rgba(40,60,90,.16); --ink:#1b2430; --sub:#556274; --dim:#8a96a6; --green:#1f6fb2; --blue:#1f6fb2;
+  font-family:"Pretendard",system-ui,sans-serif; background:linear-gradient(180deg,#f8fafc,#e6ebf1); }
+body.mission.light::before { background-image:linear-gradient(rgba(40,60,90,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(40,60,90,.05) 1px, transparent 1px); }
+body.mission.light .panel { border-color:rgba(40,60,90,.18); box-shadow:0 4px 18px rgba(40,60,90,.06); }
+body.mission.light .center::after { display:none; }
+body.mission.light .sc, body.mission.light .brand { --cc:#1f6fb2 !important; }
+body.mission.light .brand { background:rgba(255,255,255,.94); } body.mission.light .brand b { color:#1b2430; }
+body.mission.light .sc.on { background:rgba(31,111,178,.1); }
+body.mission.light .core-label b { color:#1f6fb2; text-shadow:none; }
+body.mission.light button.go { color:#fff; }
+body.mission.light .seg button.on { background:rgba(31,111,178,.12); box-shadow:inset 0 0 0 1px rgba(31,111,178,.5); }
+body.mission.light .badge.ok, body.mission.light .badge.run { color:#1f6fb2; border-color:rgba(31,111,178,.4); background:rgba(31,111,178,.08); }
+body.mission.light textarea { background:#fff; color:#1b2430; } body.mission.light .pop { background:rgba(255,255,255,.98); box-shadow:0 12px 40px rgba(40,60,90,.18); }
+body.mission.light .sc { background:rgba(255,255,255,.92); } body.mission.light .sc small { color:#1f6fb2; } body.mission.light .seg, body.mission.light #refresh { background:#fff !important; color:#556274 !important; }
+body.mission.light .mission .txt, body.mission.light .item pre { color:#2b3a4d; } body.mission.light .pipe, body.mission.light .row { background:rgba(255,255,255,.95); }
+body.mission.retro { --bg:#010803; --panel:rgba(2,14,6,.9); --card:rgba(3,20,9,.88); --line:rgba(57,255,106,.22); --ink:#c8ffc8; --sub:#4fa05a; --dim:#2b6a36; --green:#39ff6a; --blue:#39ff6a;
+  background:radial-gradient(ellipse at 50% 45%, #04170a 0%, #010803 72%); }
+body.mission.retro::before { background-image:linear-gradient(rgba(57,255,106,.05) 1px, transparent 1px), linear-gradient(90deg, rgba(57,255,106,.05) 1px, transparent 1px); }
+body.mission.retro .panel { border-color:rgba(57,255,106,.3); }
+body.mission.retro .center::after { background:repeating-linear-gradient(0deg, rgba(57,255,106,.045) 0 1px, transparent 1px 3px); }
+body.mission.retro .sc, body.mission.retro .brand { --cc:#39ff6a !important; } body.mission.retro .brand { background:rgba(2,16,7,.92); } body.mission.retro .brand b { color:#c8ffc8; }
+body.mission.retro .sc.on { background:rgba(57,255,106,.12); } body.mission.retro .core-label b { color:#39ff6a; text-shadow:0 0 14px rgba(57,255,106,.5); }
+body.mission.retro button.go { color:#012008; } body.mission.retro .seg button.on { background:rgba(57,255,106,.16); box-shadow:inset 0 0 0 1px rgba(57,255,106,.55); }
+body.mission.retro .badge.ok, body.mission.retro .badge.run { color:#39ff6a; border-color:rgba(57,255,106,.45); background:rgba(57,255,106,.08); }
+body.mission.retro .mission .txt, body.mission.retro .item pre { color:#9be89b; }
+/* ===== 테마: 해양 (OCEAN) — 낮은 대비, 부드러운 청록, 느린 움직임 ===== */
+body.ocean { --bg:#031017; --panel:rgba(6,28,38,.72); --card:rgba(9,40,52,.7); --line:rgba(110,200,215,.17); --ink:#e0f5f5; --sub:#86aeb8; --dim:#4c7380;
+  --green:#5ed8c8; --blue:#6fb4ff; --orange:#ff9a70; background:radial-gradient(ellipse at 50% 45%, #07242f 0%, #031219 55%, #01070b 100%); }
+body.ocean::before { background-image:none; }
+body.ocean .panel { border-radius:16px; border-color:rgba(110,200,215,.2); }
+body.ocean .center { border:0; background:transparent; }
+body.ocean .mission, body.ocean .role, body.ocean .pop, body.ocean .row { border-radius:12px; }
+body.ocean .brand { border-radius:12px; background:rgba(6,30,40,.7); border-color:color-mix(in srgb, var(--cc) 60%, transparent); box-shadow:none; }
+body.ocean .sc { border-radius:12px; box-shadow:none; }
+body.ocean .sc.on { box-shadow:0 0 22px color-mix(in srgb, var(--cc) 30%, transparent); }
+body.ocean .core-label b { text-shadow:0 0 18px rgba(94,216,200,.35); }
+body.ocean button.go { color:#02201c; border-radius:10px; }
+@media (max-width:1100px) { body { overflow:auto; } .app { position:static; display:block; padding:54px 12px 12px; } .center { height:72vh; margin:12px 0; } .panel { margin-bottom:12px; } .stages { display:none; } }
+</style>
+</head>
+<body>
+<div class="top">
+  <span class="dot"></span><b>TRINITY</b><span>세 AI, 하나의 시스템</span>
+  <span class="sp"></span>
+  <span class="badge ok">읽기 전용 리뷰</span>
+  <button class="seg" style="border:1px solid var(--line);border-radius:7px;background:rgba(8,13,22,.6);padding:5px 11px;font-size:11px;color:var(--sub)" id="refresh">AI 상태 새로고침</button>
+  <span class="dd" id="dd"><button class="ddbtn" id="dd-btn" aria-haspopup="true" aria-expanded="false">디자인 · <b id="dd-cur">입자 우주</b> <span class="car">▾</span></button>
+    <div class="ddmenu" id="dd-menu" hidden>
+      <button data-th="solar"><i style="background:radial-gradient(circle at 50% 50%,#ffd25a 0 22%,#0b1030 24%)"></i><span><b>태양계</b><small>행성들이 태양 둘레를 빙빙 도는 우주</small></span></button>
+      <button data-th="ocean"><i style="background:linear-gradient(135deg,#0a3441,#5ed8c8)"></i><span><b>심해</b><small>고래·돌고래·해마가 헤엄치는 바다</small></span></button>
+      <button data-th="mission"><i style="background:linear-gradient(135deg,#010803,#39ff6a)"></i><span><b>관제실</b><small>검은 바탕의 초록 터미널 레이더</small></span></button>
+    </div></span>
+  <span id="clock" style="min-width:56px;text-align:right"></span>
+  <span id="who" style="color:var(--sub);font-size:11px;letter-spacing:.04em"></span><button class="ddbtn" id="connbtn" title="AI 연동(로그인)">연동 <i id="conndot" style="display:inline-block;width:7px;height:7px;border-radius:50%;background:#7f90a8;margin-left:3px"></i></button><button class="ddbtn" id="logout" title="로그아웃">로그아웃</button>
+</div>
+
+<div class="connpanel" id="conn" hidden></div>
+<div class="app">
+  <!-- 왼쪽: 지금 / 미션 / 결과물 / 진행 기록 -->
+  <section class="panel left scroll">
+    <div class="in">
+      <div class="hd">지금</div>
+      <div class="status">
+        <h1 id="st-title">세 AI가 지시를<br>기다리고 있습니다</h1>
+        <p id="st-sub">마지막 미션 기록 없음</p>
+        <div class="timer"><span id="timer">--:--</span><small id="timer-s">대기</small></div>
+      </div>
+
+      <div class="mission">
+        <div class="r"><span>미션</span><span class="badge" id="m-badge">대기</span></div>
+        <div class="txt" id="m-text">아직 요청이 없습니다. 아래에 리뷰 요청을 적어 주세요.</div>
+        <div class="steps" id="m-steps"></div>
+        <div class="meta" id="m-meta"></div>
+      </div>
+
+      <div class="sub-hd"><span class="hd">새 미션</span></div>
+      <textarea id="prompt" placeholder="배경과 코드를 담아 적어 주세요. 리뷰어는 프로젝트 파일을 직접 볼 수 없습니다."></textarea>
+      <div class="chk" id="chk"></div>
+      <button class="go" id="go">동시에 호출</button>
+      <div class="hint" id="hint">리뷰어는 병렬·읽기 전용입니다. 최종 판단은 Claude가 합니다.</div>
+
+      <div class="sub-hd"><span class="hd">결과물 · 리뷰어 답변</span></div>
+      <div id="feed"><div class="hint">아직 답변이 없어요.</div></div>
+
+      <div class="sub-hd"><span class="hd">진행 기록</span></div>
+      <div class="log" id="log"></div>
+    </div>
+  </section>
+
+  <!-- 가운데: 코어 + 세 노드 -->
+  <section class="panel center" id="center">
+    <canvas id="cv"></canvas>
+    <div class="stages" id="stages"></div>
+    <div id="brands"></div>
+    <div class="core-label"><b id="core-state">대기</b><span id="core-sub">TRINITY CORE</span><small id="core-sub2">세 AI가 지시를 기다리고 있습니다</small></div>
+    <div class="pipe" id="pipe"></div>
+    <div class="pop" id="pop" hidden></div>
+    <div class="pop" id="tgt" hidden></div>
+    <div class="mcbar"><button class="mcbtn" id="mcnew">＋ 가상 목표물</button><button class="mcbtn" id="mcauto">자동 처리: 켜짐</button><button class="mcbtn" id="mclogbtn">기록 ▸</button></div>
+    <div class="mclog" id="mclog" hidden></div>
+  </section>
+
+  <!-- 오른쪽: AI별 작업량 -->
+  <section class="panel right scroll">
+    <div class="sec">
+      <div class="top2"><span class="hd">AI별 작업량</span>
+        <span class="seg" id="tabs"><button data-t="mission" class="on">이번 미션</button><button data-t="today">오늘</button><button data-t="all">전체</button></span></div>
+      <div class="big"><span id="total">0</span><small>회 호출</small></div>
+      <div class="sumline" id="sumline">호출 0회 · 소요 0초 · 실패 0</div>
+      <div class="stack" id="stack"></div>
+      <div id="roles"></div>
+    </div>
+    <div class="sec"><div class="hd" style="margin-bottom:8px">최근 AI 호출</div><div id="calls"></div></div>
+    <div class="sec"><div class="hd" style="margin-bottom:6px">CLI 연결</div><div id="conns"></div></div>
+  </section>
+</div>
+
+<script>
+/* =====================================================================
+   설정값 — 이름·색·역할·위치·단계 이름은 여기만 바꾸면 됩니다.
+   ===================================================================== */
+const CONFIG = {
+  nodes: {
+    codex:  { name:'Codex',  brand:'OPENAI',    tag:'REVIEWER · 코드 검수',  role:'코드·보안·테스트', stageKo:'검수', color:'#34e0b0', pos:[0.46, 0.21], card:['left', -0.27, -0.02] },
+    gemini: { name:'Gemini', brand:'GOOGLE',    tag:'REVIEWER · 설계 검수',  role:'설계·아이디어',   stageKo:'검수', color:'#6c9dff', pos:[0.22, 0.66], card:['left', -0.16, -0.15] },
+    claude: { name:'Claude', brand:'ANTHROPIC', tag:'HEAD · 지휘·구현',      role:'구현·최종 판단',   stageKo:'구현', color:'#ff8f5e', pos:[0.78, 0.66], card:['left', -0.07, -0.20] },
+  },
+  reviewers: ['codex', 'gemini'],          // 리뷰 요청 때 호출하는 AI
+  stages: [                                  // 가운데 위 카드 (영상의 계획·구현·테스트·검수·판단)
+    { tag:'HEAD',     ko:'계획', color:'#34e0b0' },
+    { tag:'BUILDER',  ko:'구현', color:'#6c9dff' },
+    { tag:'VERIFIER', ko:'테스트', color:'#cfd8e6' },
+    { tag:'REVIEWER', ko:'검수', color:'#ff8f5e' },
+    { tag:'HEAD',     ko:'판단', color:'#34e0b0' },
+  ],
+  pipeline: [['계획','HEAD'],['구현','BUILDER'],['테스트','VERIFIER'],['검수','REVIEWER'],['판단','HEAD']],
+  tabs: { mission:'이번 미션', today:'오늘', all:'전체' },
+};
+const N = CONFIG.nodes, KEYS = Object.keys(N);
+const rgba = (h,a) => { const c=[1,3,5].map(i=>parseInt(h.slice(i,i+2),16)); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
+/* 로그인이 풀리면(401) 어떤 요청에서든 로그인 화면으로 보낸다 */
+{ const _f = window.fetch.bind(window); window.fetch = (...a) => _f(...a).then(r => { if (r.status === 401) location.href = '/login'; return r; }); }
+const $ = id => document.getElementById(id);
+setInterval(() => fetch('/api/alive').catch(() => {}), 20000);                        // 창이 열려 있다는 신호(닫으면 서버가 스스로 꺼짐)
+fetch('/api/me').then(r => r.json()).then(d => { if (d && d.user) $('who').textContent = d.user; }).catch(() => {});
+$('logout').onclick = async () => { try { await fetch('/logout', { method:'POST', headers:{ 'Content-Type':'application/x-www-form-urlencoded' }, body:'' }); } catch (e) { /* 실패해도 이동 */ } location.href = '/login'; };
+const esc = s => String(s).replace(/[&<>]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;'}[c]));
+
+/* ===== 상태 ===== */
+const state = { codex:'idle', gemini:'idle', claude:'idle' }; // idle|running|done|failed|limit
+let stage = -1;              // 파이프라인에서 켜진 단계 (3=검수, 4=판단, 1=구현)
+let runStart = 0, runEnd = 0, history = [], live = null, selected = null, tab = 'mission';
+let claudeInfo = { ok:false }, conns = {}, reviewActive = false;
+
+/* ===== 캔버스 ===== */
+const cv = $('cv'), g = cv.getContext('2d');
+let W, H, dpr, orbs = {}, flows = [], stars = [], tk = 0;
+function fib(n) { const pts=[], ga=Math.PI*(3-Math.sqrt(5)); for (let i=0;i<n;i++){ const y=1-2*(i+.5)/n, r=Math.sqrt(1-y*y), t=ga*i; pts.push([Math.cos(t)*r, y, Math.sin(t)*r]); } return pts; }
+function layout() {
+  dpr = devicePixelRatio || 1; W = cv.clientWidth; H = cv.clientHeight; cv.width = W*dpr; cv.height = H*dpr; g.setTransform(dpr,0,0,dpr,0,0);
+  KEYS.forEach(k => { const o = orbs[k] || (orbs[k] = { pts:fib(300), rot:Math.random()*6 }); o.hx = o.x = N[k].pos[0]*W; o.hy = o.y = N[k].pos[1]*H; o.r = Math.min(W,H)*0.078; });
+  stars = Array.from({length:90}, () => [Math.random()*W, Math.random()*H, Math.random()*1.3+.3, Math.random()*6]);
+  placeBrands();
+}
+const rings = [{c:'#34e0b0',tilt:0.35,n:460},{c:'#ff8f5e',tilt:-0.95,n:460},{c:'#6c9dff',tilt:1.55,n:460}]
+  .map(r => ({...r, pts:Array.from({length:r.n}, () => ({a:Math.random()*6.283,w:(Math.random()-.5)*0.16,h:(Math.random()-.5)*0.16,s:Math.random()*1.3+.4}))}));
+const core = () => ({ x:W*0.5, y:H*0.55, r:Math.min(W,H)*0.16 });
+const AMBER = '#f5b942', RED = '#ff5c6c';
+const nodeColor = k => state[k]==='failed' ? RED : state[k]==='limit' ? AMBER : N[k].color;
+
+/* ===== MISSION 테마: 레이더 관제 화면 ===== */
+let theme = 'trinity';
+let AMB = '#ffb020', ACC = [255, 176, 32], TXT = '#ffe9c2';                    // 레이더 계열 테마의 포인트색 (관제실=앰버, 라이트=남색, 레트로=초록)
+const amb = a => `rgba(${ACC[0]},${ACC[1]},${ACC[2]},${a})`;
+/* =====================================================================================
+   관제실 모듈 — Events(기록) · Targets(가상 목표물) · Commands(관제 명령) · Panel(상세 패널) · HUD(상태판)
+   기능을 더하려면: 명령은 Commands에 항목 하나, 표시는 Targets.draw / HUD.draw 에 추가하면 된다.
+   (모두 가상의 신호·표시이며, 실제 장비와 통신하지 않는다. 실제 이상 상황은 mcAnoms()가 읽기 전용으로 가져온다.)
+   ===================================================================================== */
+const MONO = '"JetBrains Mono", monospace';
+const hms = () => { const d = new Date(); return [d.getHours(), d.getMinutes(), d.getSeconds()].map(pad).join(':'); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+const ST = { incoming:'접근 중', detected:'탐지됨', tracking:'추적 중', held:'보류', resolving:'해소 중', passing:'통과 중', resolved:'해소됨', passed:'통과 완료', lost:'소실' };
+const isFinal = t => t.state === 'resolved' || t.state === 'lost' || t.state === 'passed';
+const sevCol = t => t.sim ? AMB : (t.sev >= 2 ? RED : AMBER);
+const SIM_KINDS = { 'LATENCY SPIKE':'NETWORK', 'CONTEXT DRIFT':'LOAD', 'QUEUE BURST':'LOAD', 'TIMEOUT RISK':'NETWORK', 'NOISE FLOOR':'SIGNAL', 'SIGNAL JITTER':'SIGNAL' };
+const SIM_LABELS = Object.keys(SIM_KINDS);
+const NORMAL_LABELS = ['HEARTBEAT', 'SYNC PING', 'STATUS REPORT', 'CACHE REFRESH', 'TELEMETRY'];                    // 정상 신호(통과 승인 대상)
+
+/* ── Events: 화면 로그 + 서버에 저장(events.jsonl) ── */
+const Events = {
+  log:[],
+  push(tag, text, col, t) {
+    this.log.unshift({ t:hms(), tag, text, col }); if (this.log.length > 30) this.log.pop();
+    fetch('/api/event', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ tag, text, target:t ? `T-${pad(t.id)}` : '', sim:t ? t.sim : false }) }).catch(() => {});
+    if (!$('mclog').hidden) setTimeout(() => this.render(), 250);
+  },
+  async render() {
+    let rows = []; try { rows = await (await fetch('/api/events')).json(); } catch (e) { /* 서버 응답 없으면 빈 목록 */ }
+    $('mclog').innerHTML = '<div class="h">EVENT LOG · 저장된 기록</div>' + (rows.length ? rows.map(r => `<div class="r"><span class="t">${r.ts.slice(5, 16)}</span><b>${esc(r.tag)}</b>${r.sim ? ' <i>SIM</i>' : ''}<br>${esc(r.text)}</div>`).join('') : '<div class="r">기록이 아직 없어요.</div>');
+  },
+};
+
+/* ── 실제 이상 상황(읽기 전용) ── */
+function mcAnoms() {
+  const out = {}, now = Date.now();
+  history.slice(0, 6).forEach(h => { const t = new Date(h.started.replace(' ', 'T')).getTime(); if (now - t > 15*60000) return;
+    Object.entries(h.who).forEach(([k, w]) => { if (w.status === 'failed') out[`run-${h.id}-${k}`] = { ai:k, label:`${N[k].name} ${w.reason === 'limit' ? '한도 소진' : '호출 실패'}`, sev:w.reason === 'limit' ? 1 : 2, cls:w.reason === 'limit' ? 'QUOTA' : 'RUN FAILURE', retry:{ ai:k, prompt:h.prompt } }; }); });
+  if (claudeInfo.ok) { if (claudeInfo.percent >= 75) out.ctx = { ai:'claude', label:`Claude 컨텍스트 ${claudeInfo.percent}%`, sev:claudeInfo.percent >= 90 ? 2 : 1, cls:'CONTEXT' };
+    if (claudeInfo.five_hour >= 80) out.h5 = { ai:'claude', label:`5시간 한도 ${claudeInfo.five_hour}%`, sev:claudeInfo.five_hour >= 95 ? 2 : 1, cls:'QUOTA' };
+    if (claudeInfo.seven_day >= 85) out.d7 = { ai:'claude', label:`7일 한도 ${claudeInfo.seven_day}%`, sev:claudeInfo.seven_day >= 95 ? 2 : 1, cls:'QUOTA' }; }
+  [['codex', 'Codex'], ['gemini', 'Gemini'], ['claude', 'Claude 사용량']].forEach(([k, l]) => { if (conns[k] === false) out['conn-' + k] = { ai:k, label:`${l} 연결 안 됨`, sev:1, cls:'NOT CONNECTED' }; });
+  return out;
+}
+
+/* ── Targets: 가상 목표물(생성·이동·탐지·상태 변경·그리기·선택) ── */
+const MC = { targets:[], n:0, ack:new Set(), nextSim:0, nextSync:0, total:0, resolved:0, passed:0, sel:null, pulse:0, auto:true };
+const Targets = {
+  make(c, R, o) {
+    const tgt = o.ai ? orbs[o.ai] : null, ang = tgt ? Math.atan2(tgt.y - c.y, tgt.x - c.x) + (Math.random() - .5)*1.3 : Math.random()*6.283, a2 = ang + (Math.random() - .5)*.8, r2 = R*(.25 + Math.random()*.25);
+    const t = { id:++MC.n, key:o.key, sim:!!o.sim, label:o.label, sev:o.sev || 0, ai:o.ai, cls:o.cls || SIM_KINDS[o.label] || 'SIGNAL', retry:o.retry || null, normal:!!o.normal, state:'incoming', identified:false,
+      sx:c.x + Math.cos(ang)*R*1.2, sy:c.y + Math.sin(ang)*R*1.2, tx:tgt ? tgt.x + (Math.random() - .5)*34 : c.x + Math.cos(a2)*r2, ty:tgt ? tgt.y + (Math.random() - .5)*34 : c.y + Math.sin(a2)*r2,
+      rate:o.sim ? .0022 : .0016, p:0, x:0, y:0, age:0, since:0, flash:0, fade:0, busy:false, last:'' };
+    t.x = t.sx; t.y = t.sy; MC.targets.push(t); return t;
+  },
+  setState(t, s, tag, text, col) { if (t.state === s) return; t.state = s; t.since = tk; Events.push(tag, `T-${pad(t.id)} ${text}`, col || ACC, t); },
+  pass(t) { if (t.state === 'passing' || isFinal(t) || !MC.geo) return; const c0 = MC.geo.c; t.sx = t.x; t.sy = t.y; t.tx = c0.x; t.ty = c0.y; t.p = 0; t.rate = .013; t.state = 'passing'; t.since = tk;
+    Events.push('PASS', `T-${pad(t.id)} 통과 승인(정상 신호)`, ACC, t); if (MC.sel === t.id) Panel.refresh(t); },
+  begin(t, tag = 'RESOLVED') { if (isFinal(t) || t.state === 'resolving') return; t.state = 'resolving'; t.rt = 0; t.resTag = tag; Events.push('PROCESS', `T-${pad(t.id)} 해소 절차 시작`, ACC, t); if (MC.sel === t.id) Panel.refresh(t); },
+  resolve(t, tag = 'RESOLVED') { if (isFinal(t)) return; t.state = 'resolved'; t.fade = 0; t.burst = Array.from({ length:30 }, () => ({ a:Math.random()*6.283, v:.6 + Math.random()*1.8, s:Math.random()*2 + .8 })); MC.pulse = 1; MC.resolved++; if (t.key && !t.sim) MC.ack.add(t.key); Events.push(tag, `T-${pad(t.id)} ${t.label}`, ACC, t); if (MC.sel === t.id) Panel.refresh(t); },
+  auto(t) {                                                                                                  // 자동 처리: 탐지 → 추적 고정 → 식별 → 해소(실제 이상은 천천히, 재시도는 자동으로 하지 않음)
+    const dt = tk - t.since;
+    if (t.state === 'detected' && dt > 18) { this.setState(t, 'tracking', 'AUTO', '자동 추적 고정', ACC); return; }
+    if (t.state === 'tracking') { if (!t.identified && dt > 30) { t.identified = true; Events.push('AUTO', `T-${pad(t.id)} 자동 식별: ${t.cls}${t.normal ? ' → 통과 대상' : ''}`, ACC, t); return; }
+      if (t.identified && dt > (t.sim ? 60 : 900)) { if (t.normal) { this.pass(t); return; } Events.push('AUTO', `T-${pad(t.id)} 자동 ${t.sim ? '해소' : '확인'} 처리`, ACC, t); this.begin(t, t.sim ? 'RESOLVED' : 'ACK'); } }
+  },
+  get(id) { return MC.targets.find(t => t.id === id); },
+  hit(e) { const r = cv.getBoundingClientRect(), x = e.clientX - r.left, y = e.clientY - r.top; let best = null, bd = 22;
+    MC.targets.forEach(t => { if (t.state === 'incoming' || isFinal(t)) return; const d = Math.hypot(t.x - x, t.y - y); if (d < bd) { bd = d; best = t; } }); return best; },
+  telemetry(t, c, R) { const dx = t.x - c.x, dy = t.y - c.y, brg = ((Math.atan2(dx, -dy)*57.296) + 360) % 360, rng = Math.hypot(dx, dy)/R*100, len = Math.hypot(t.tx - t.sx, t.ty - t.sy), spd = len*t.rate*60/R*100, eta = t.p >= 1 ? 0 : (1 - t.p)/t.rate/60;
+    return { brg, rng, spd, eta }; },
+  step(c, R, sweep) {
+    if (tk >= MC.nextSync) { MC.nextSync = tk + 90; const an = mcAnoms();                    // 실제 이상 상황 동기화
+      Object.entries(an).forEach(([key, a]) => { if (!MC.ack.has(key) && !MC.targets.some(t => t.key === key) && MC.targets.length < 10) this.make(c, R, { key, ...a }); });
+      MC.targets.forEach(t => { if (!t.sim && !isFinal(t) && !an[t.key] && !t.busy) this.begin(t, 'RESOLVED'); }); }
+    if (tk >= MC.nextSim) { MC.nextSim = tk + 500 + Math.random()*700; if (MC.targets.filter(t => t.sim && !isFinal(t)).length < 4) { const nrm = Math.random() < .35; this.make(c, R, nrm ? { sim:true, normal:true, cls:'NORMAL', label:NORMAL_LABELS[Math.floor(Math.random()*NORMAL_LABELS.length)] } : { sim:true, label:SIM_LABELS[Math.floor(Math.random()*SIM_LABELS.length)] }); } }
+    MC.targets = MC.targets.filter(t => {
+      t.age++; if (isFinal(t)) { t.fade += .03; return t.fade < 1; }
+      if (t.state === 'resolving') { t.rt++; if (t.rt >= 40) this.resolve(t, t.resTag); return true; }
+      if (t.p < 1 && t.state !== 'held') t.p = Math.min(1, t.p + t.rate), t.x = t.sx + (t.tx - t.sx)*t.p + Math.sin(t.age*.05)*7*(1 - t.p), t.y = t.sy + (t.ty - t.sy)*t.p + Math.sin(t.age*.05)*3.5*(1 - t.p);
+      if (t.state === 'passing' && t.p >= 1) { t.state = 'passed'; t.fade = 0; MC.passed++; Events.push('PASSED', `T-${pad(t.id)} ${t.label} 통과 완료`, ACC, t); if (MC.sel === t.id) Panel.refresh(t); return true; }
+      const ang = Math.atan2(t.y - c.y, t.x - c.x); let d = (sweep - ang) % 6.283; if (d < 0) d += 6.283;
+      if (t.state === 'incoming' && t.p > .12 && d < .14) { t.state = 'detected'; t.since = tk; t.flash = 1; MC.total++; Events.push('DETECT', `T-${pad(t.id)} ${t.sim ? 'SIM ' : ''}${t.label}`, sevCol(t), t); }
+      if (t.sim && !isFinal(t) && t.state !== 'incoming' && tk - t.since > 6000) { t.state = 'lost'; t.fade = 0; Events.push('LOST', `T-${pad(t.id)} 신호 소실(무응답)`, AMBER, t); }
+      if (!t.sim && !isFinal(t) && t.state === 'detected' && tk - t.since > 21600) { this.begin(t, 'ACK'); }
+      if (MC.auto && MC.sel !== t.id && !t.busy && !isFinal(t) && t.state !== 'resolving') this.auto(t);
+      return true; });
+  },
+  draw(c, R) {
+    MC.targets.forEach(t => {
+      const col = sevCol(t), sel = MC.sel === t.id;
+      if (t.state === 'incoming') { dot(t.x, t.y, 2, AMB, .12 + .18*Math.abs(Math.sin(t.age*.2))); return; }
+      if (t.state === 'resolving') {                                                                               // 해소 중: 조여드는 브래킷 + 진행 링 + 스캔 줄 + 진행률
+        const pr = Math.min(1, t.rt/40); g.save(); g.translate(t.x, t.y); const q = 22 - pr*10, s = 5; g.strokeStyle = amb(.95); g.lineWidth = 1.6;
+        for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { g.beginPath(); g.moveTo(sx*q, sy*(q - s)); g.lineTo(sx*q, sy*q); g.lineTo(sx*(q - s), sy*q); g.stroke(); } g.restore();
+        g.strokeStyle = amb(.25); g.beginPath(); g.arc(t.x, t.y, 26, 0, 6.283); g.stroke(); g.strokeStyle = amb(.95); g.lineWidth = 2.2; g.beginPath(); g.arc(t.x, t.y, 26, -Math.PI/2, -Math.PI/2 + pr*6.283); g.stroke(); g.lineWidth = 1;
+        const sy2 = t.y - 26 + ((t.rt*7) % 52); g.strokeStyle = amb(.5); g.beginPath(); g.moveTo(t.x - 24, sy2); g.lineTo(t.x + 24, sy2); g.stroke();
+        g.fillStyle = amb(.9); g.font = `700 10px ${MONO}`; g.textAlign = 'center'; g.fillText(`ANALYZING ${Math.round(pr*100)}%`, t.x, t.y + 42); g.textAlign = 'left';
+        g.fillStyle = rgba(sevCol(t), .4 + .5*Math.abs(Math.sin(t.rt*.3))); g.beginPath(); g.moveTo(t.x, t.y - 4.5); g.lineTo(t.x + 4.5, t.y); g.lineTo(t.x, t.y + 4.5); g.lineTo(t.x - 4.5, t.y); g.closePath(); g.fill(); return; }
+      if (isFinal(t)) {                                                                                            // 해소 완료: 데이터 입자로 분해 + 체크 + 도장
+        const f = t.fade, ok = t.state === 'resolved' || t.state === 'passed', cf = ok ? amb : (a => rgba(AMBER, a));
+        (t.burst || []).forEach(b => { const d = f*60*b.v; dot(t.x + Math.cos(b.a)*d, t.y + Math.sin(b.a)*d, b.s*(1 - f*.6), ok ? AMB : AMBER, .9*(1 - f)); });
+        g.strokeStyle = cf(.7*(1 - f)); g.lineWidth = 1.6; g.beginPath(); g.arc(t.x, t.y, 8 + f*46, 0, 6.283); g.stroke(); g.lineWidth = 1;
+        if (t.state === 'resolved') { g.strokeStyle = amb(Math.min(1, (1 - f)*1.6)); g.lineWidth = 2.2; g.beginPath(); g.moveTo(t.x - 7, t.y); g.lineTo(t.x - 2, t.y + 6); g.lineTo(t.x + 8, t.y - 7); g.stroke(); g.lineWidth = 1; }
+        const sc = 1 + Math.max(0, .5 - f*3)*1.2, al = f < .7 ? 1 : (1 - f)/.3; g.save(); g.translate(t.x, t.y - 36); g.rotate(-.09); g.scale(sc, sc); g.font = `700 12px ${MONO}`; const label = t.state === 'passed' ? 'PASSED' : ok ? 'RESOLVED' : 'LOST', w = g.measureText(label).width;
+        g.strokeStyle = cf(.9*al); g.lineWidth = 1.6; g.strokeRect(-w/2 - 8, -11, w + 16, 21); g.fillStyle = cf(.95*al); g.textAlign = 'center'; g.fillText(label, 0, 4); g.restore(); g.textAlign = 'left'; g.lineWidth = 1; return; }
+      const held = t.state === 'held', a = held ? .45 : 1;
+      t.flash = Math.max(0, t.flash - .02); if (t.flash > 0) { g.strokeStyle = rgba(col, t.flash*.8); g.beginPath(); g.arc(t.x, t.y, 8 + (1 - t.flash)*30, 0, 6.283); g.stroke(); }
+      for (let i = 1; i <= 12; i++) { const tt = Math.max(0, t.p - i*.012); dot(t.sx + (t.tx - t.sx)*tt, t.sy + (t.ty - t.sy)*tt, 2.2 - i*.15, col, .4*(1 - i/13)*a); }       // 지나온 경로
+      if ((t.state === 'tracking' || t.state === 'passing' || sel) && t.p < 1) { g.setLineDash([4, 5]); g.strokeStyle = rgba(col, .6); g.beginPath(); g.moveTo(t.x, t.y); g.lineTo(t.tx, t.ty); g.stroke(); g.setLineDash([]);          // 예상 경로
+        g.strokeStyle = rgba(col, .6); g.beginPath(); g.arc(t.tx, t.ty, 5, 0, 6.283); g.stroke(); }
+      g.save(); g.translate(t.x, t.y); const tr = t.state === 'tracking'; g.rotate(tr || held ? 0 : t.age*.06); g.strokeStyle = rgba(col, .95*a); g.lineWidth = tr ? 1.8 : 1.3; const q = tr ? 13 : 11, s = 5;
+      for (const [sx, sy] of [[-1, -1], [1, -1], [1, 1], [-1, 1]]) { g.beginPath(); g.moveTo(sx*q, sy*(q - s)); g.lineTo(sx*q, sy*q); g.lineTo(sx*(q - s), sy*q); g.stroke(); } g.restore();
+      if (sel) { g.strokeStyle = rgba(col, .5 + .4*Math.sin(tk/6)); g.beginPath(); g.arc(t.x, t.y, 20 + 3*Math.sin(tk/6), 0, 6.283); g.stroke(); }
+      g.fillStyle = rgba(col, a); g.shadowColor = col; g.shadowBlur = held ? 0 : 10; g.beginPath(); if (t.normal) g.arc(t.x, t.y, 4.2, 0, 6.283); else { g.moveTo(t.x, t.y - 4.5); g.lineTo(t.x + 4.5, t.y); g.lineTo(t.x, t.y + 4.5); g.lineTo(t.x - 4.5, t.y); g.closePath(); } g.fill(); g.shadowBlur = 0; g.lineWidth = 1;
+      const right = t.x < c.x + R*.5, lx = t.x + (right ? 20 : -20), txt = `T-${pad(t.id)} ${t.sim ? 'SIM' : (t.sev >= 2 ? 'CRIT' : 'WARN')} · ${t.identified ? t.label : (tr ? t.label : 'UNKNOWN')}${held ? ' [HOLD]' : ''}${t.state === 'passing' ? ' → PASS' : ''}`;
+      g.font = `600 10px ${MONO}`; const w = g.measureText(txt).width; g.strokeStyle = rgba(col, .5*a); g.beginPath(); g.moveTo(t.x + (right ? 11 : -11), t.y - 8); g.lineTo(lx, t.y - 16); g.stroke();
+      g.fillStyle = 'rgba(0,0,0,.55)'; g.fillRect(right ? lx - 3 : lx - w - 3, t.y - 27, w + 6, 14); g.fillStyle = rgba(col, a); g.fillText(txt, right ? lx : lx - w, t.y - 16);
+    });
+  },
+};
+
+/* ── Commands: 관제 명령 모음 — 새 명령은 여기에 항목만 추가 ── */
+const Commands = {
+  track:    { label:'추적 고정', can:t => t.state !== 'tracking', run:t => Targets.setState(t, 'tracking', 'TRACK', '추적 고정', ACC) },
+  identify: { label:'식별', can:t => !t.identified, run:t => { t.identified = true; Events.push('IDENT', `T-${pad(t.id)} 분류: ${t.cls}`, ACC, t); Panel.msg(`분류 결과: ${t.cls}`); } },
+  hold:     { label:'보류', can:t => t.state !== 'held', run:t => Targets.setState(t, 'held', 'HOLD', '보류(이동 정지)', AMBER) },
+  retry:    { label:'재시도', can:t => !!t.retry && !t.busy, async run(t) {                                   // 실제 동작: 실패한 호출을 같은 요청으로 다시 실행
+      t.busy = true; Panel.msg('재시도 중…'); Events.push('CMD', `T-${pad(t.id)} 재시도(${N[t.retry.ai].name})`, ACC, t); Panel.refresh(t);
+      let ok = false; try { const r = await fetch('/api/review', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ prompt:t.retry.prompt, who:[t.retry.ai] }) });
+        if (r.ok) { const id = (await r.json()).id; for (let i = 0; i < 80; i++) { await sleep(1500); const run = await (await fetch('/api/run/' + id)).json(), w = run.who[t.retry.ai]; if (!['wait', 'running'].includes(w.status)) { ok = w.status === 'done'; break; } } } } catch (e) { ok = false; }
+      t.busy = false; loadAll();
+      if (ok) { Events.push('RESULT', `T-${pad(t.id)} 재시도 성공`, ACC, t); Targets.begin(t, 'RESOLVED'); Panel.msg('재시도 성공 — 해소 절차 진행'); }
+      else { t.last = 'FAIL'; Events.push('RESULT', `T-${pad(t.id)} 재시도 실패`, RED, t); Panel.msg('재시도 실패 — 계속 추적 중'); Panel.refresh(t); } } },
+  pass:     { label:'통과 승인', can:t => !!t.normal && t.state !== 'passing', run:t => Targets.pass(t) },
+  resolve:  { label:t => t.sim ? '해소 처리' : '확인 처리', can:t => !t.busy, run:t => Targets.begin(t, t.sim ? 'RESOLVED' : 'ACK') },
+};
+
+/* ── Panel: 선택한 목표물의 상세 정보 + 명령 버튼 ── */
+const Panel = {
+  open(t) { MC.sel = t.id; const p = $('tgt'); p.style.setProperty('--cc', sevCol(t)); p.hidden = false;
+    p.innerHTML = `<h3><div><small id="tg-sub"></small><span id="tg-ttl"></span></div><button id="tg-x" title="닫기">×</button></h3>
+      <div class="cur">상태 <b id="tg-st"></b> · 분류 <b id="tg-cls"></b></div>
+      <div class="use"><div id="tg-brg">-<small>방위</small></div><div id="tg-rng">-<small>거리</small></div><div id="tg-spd">-<small>속도</small></div></div>
+      <div class="use" style="margin-top:6px"><div id="tg-eta">-<small>도달 예상</small></div><div id="tg-sev">-<small>위험도</small></div><div id="tg-src">-<small>출처</small></div></div>
+      <div class="cmds" id="tg-cmds"></div><div class="msg" id="tg-msg"></div>`;
+    $('tg-x').onclick = () => Panel.close(); this.sig = ''; this.refresh(t); this.tick(t); },
+  close() { MC.sel = null; $('tgt').hidden = true; },
+  msg(s) { const m = $('tg-msg'); if (m) m.textContent = s; },
+  refresh(t) {                                                                                                   // 상태가 바뀔 때만 버튼을 다시 그림
+    const sig = t.state + t.identified + t.busy + (t.last || ''); if (sig === this.sig) return; this.sig = sig;
+    $('tg-sub').textContent = `T-${pad(t.id)} · ${t.sim ? 'SIM(연습)' : 'REAL(실제 이상)'}`; $('tg-ttl').textContent = t.label; $('tg-st').textContent = ST[t.state] + (t.busy ? ' · 재시도 중' : (t.last ? ' · 최근 시도 실패' : ''));
+    $('tg-cls').textContent = t.identified ? t.cls : '미식별'; $('tg-sev').textContent = t.sim ? '-' : (t.sev >= 2 ? 'CRIT' : 'WARN'); $('tg-src').textContent = t.ai ? N[t.ai].name : '레이더';
+    const box = $('tg-cmds'); box.innerHTML = ''; if (t.state === 'resolving' || t.state === 'passing') { box.innerHTML = '<div class="msg">' + (t.state === 'passing' ? '통과 중…' : '해소 절차 진행 중…') + '</div>'; return; }
+    if (isFinal(t)) { box.innerHTML = '<div class="msg">종료된 목표물입니다.</div>'; return; }
+    Object.entries(Commands).forEach(([k, c]) => { if (!c.can(t)) return; const b = document.createElement('button'); b.textContent = typeof c.label === 'function' ? c.label(t) : c.label; b.dataset.cmd = k;
+      b.onclick = () => { c.run(t); Panel.refresh(t); }; box.appendChild(b); }); },
+  tick(t) { if (!t || $('tgt').hidden) return; const { c, R } = MC.geo || {}; if (!c) return; const m = Targets.telemetry(t, c, R);
+    $('tg-brg').firstChild.textContent = String(Math.round(m.brg)).padStart(3, '0') + '°'; $('tg-rng').firstChild.textContent = m.rng.toFixed(1) + ' km'; $('tg-spd').firstChild.textContent = m.spd.toFixed(1) + ' u/s'; $('tg-eta').firstChild.textContent = m.eta > 0 ? m.eta.toFixed(0) + ' s' : '도착'; this.refresh(t); },
+  place(t) { const p = $('tgt'); if (p.hidden) return; p.style.opacity = t.state === 'resolving' ? .12 : 1; p.style.pointerEvents = t.state === 'resolving' ? 'none' : ''; p.style.left = Math.max(8, Math.min(W - 308, t.x + 26)) + 'px'; p.style.top = Math.max(8, Math.min(H - p.offsetHeight - 8, t.y - 40)) + 'px'; },
+};
+
+/* ── HUD: 상태판 · 게이지 · 화면 속 이벤트 로그 · 진입점 ── */
+const HUD = {
+  draw(c, R) {
+    g.textAlign = 'left'; const live = MC.targets.filter(t => !isFinal(t) && t.state !== 'incoming'), tracked = live.filter(t => t.state === 'tracking'), real = live.filter(t => !t.sim), worst = real.reduce((m, t) => Math.max(m, t.sev), -1);
+    const lvl = worst >= 2 ? ['ALERT', RED] : (worst >= 0 ? ['CAUTION', AMBER] : ['NOMINAL', AMB]), bx = W - 206, by = 88;
+    g.strokeStyle = rgba(lvl[1], .6); g.fillStyle = 'rgba(0,0,0,.35)'; g.fillRect(bx, by, 190, 34); g.strokeRect(bx, by, 190, 34); if (MC.pulse > 0) { g.strokeStyle = amb(MC.pulse); g.lineWidth = 2.4; g.strokeRect(bx - 3, by - 3, 196, 40); g.lineWidth = 1; MC.pulse -= .03; }
+    g.font = `600 9px ${MONO}`; g.fillStyle = amb(.6); g.fillText(MC.auto ? 'STATUS · AUTO' : 'STATUS', bx + 8, by + 13); g.font = `700 15px ${MONO}`; g.fillStyle = lvl[1]; g.fillText(lvl[0], bx + 8, by + 29);
+    g.font = `600 9px ${MONO}`; g.fillStyle = amb(.7); g.textAlign = 'right'; g.fillText(`TRK ${tracked.length}  LIVE ${live.length}`, bx + 182, by + 13); g.fillText(`REAL ${real.length}  RSV ${MC.resolved}  PAS ${MC.passed}`, bx + 182, by + 27); g.textAlign = 'left';
+    (claudeInfo.ok ? [['CTX', claudeInfo.percent], ['5H', claudeInfo.five_hour], ['7D', claudeInfo.seven_day]].filter(r => r[1] != null) : []).forEach(([lab, v], i) => { const gy = by + 50 + i*17, col = v >= 90 ? RED : v >= 75 ? AMBER : AMB;
+      g.font = `600 9px ${MONO}`; g.fillStyle = amb(.7); g.fillText(lab, bx, gy + 8); g.strokeStyle = amb(.3); g.strokeRect(bx + 28, gy, 118, 9); g.fillStyle = rgba(col, .85); g.fillRect(bx + 29, gy + 1, 116*Math.min(100, v)/100, 7);
+      g.fillStyle = amb(.8); g.textAlign = 'right'; g.fillText(lab === 'CTX' ? v + '%' : (100 - v) + '% 남음', bx + 190, gy + 8); g.textAlign = 'left'; });
+    if (claudeInfo.ok && claudeInfo.reset_five_hour && claudeInfo.five_hour != null) { g.font = `600 9px ${MONO}`; g.fillStyle = amb(.55); g.fillText(`초기화 5H ${fmtLeft(claudeInfo.reset_five_hour)} · 7D ${fmtLeft(claudeInfo.reset_seven_day)}`, bx, by + 118); }
+  },
+};
+function drawMissionHUD(c, R, sweep) {                                                                          // drawMission()이 매 프레임 부르는 진입점
+  MC.geo = { c, R }; g.globalCompositeOperation = 'source-over';
+  Targets.step(c, R, sweep); Targets.draw(c, R); HUD.draw(c, R);
+  const sel = MC.sel ? Targets.get(MC.sel) : null; if (sel) { if (tk % 6 === 0) Panel.tick(sel); Panel.place(sel); } else if (!$('tgt').hidden) Panel.close();
+  g.fillStyle = amb(.45); g.font = `600 9px ${MONO}`; g.fillText(`SWEEP ${String(Math.round(sweep*57.3)).padStart(3, '0')}°`, c.x - R - 8, c.y + R*.42 + 34);
+}
+$('mcnew').onclick = () => { if (!MC.geo) return; const { c, R } = MC.geo; const nrm = Math.random() < .35; Targets.make(c, R, nrm ? { sim:true, normal:true, cls:'NORMAL', label:NORMAL_LABELS[Math.floor(Math.random()*NORMAL_LABELS.length)] } : { sim:true, label:SIM_LABELS[Math.floor(Math.random()*SIM_LABELS.length)] }); MC.nextSim = tk + 600; };
+const autoLabel = () => { $('mcauto').textContent = '자동 처리: ' + (MC.auto ? '켜짐' : '꺼짐'); $('mcauto').style.borderColor = MC.auto ? 'var(--green)' : ''; };
+$('mcauto').onclick = () => { MC.auto = !MC.auto; try { localStorage.setItem('mc-auto', MC.auto ? '1' : '0'); } catch (e) { /* 저장 안 돼도 동작 */ } autoLabel(); Events.push('AUTO', MC.auto ? '자동 처리 켬' : '자동 처리 끔', ACC); }; autoLabel();
+$('mclogbtn').onclick = () => { const l = $('mclog'); l.hidden = !l.hidden; if (!l.hidden) Events.render(); };
+
+function drawMission() {
+  const c = core(), R = Math.min(W, H) * 0.40, sweep = (tk * 0.013) % 6.283;
+  g.globalCompositeOperation = 'source-over'; g.textAlign = 'center'; g.lineWidth = 1;
+  // 동심원 + 십자선 + 눈금
+  [0.25, 0.5, 0.75, 1].forEach((m, i) => { g.strokeStyle = amb(i === 3 ? .55 : .2); g.beginPath(); g.arc(c.x, c.y, R*m, 0, 6.283); g.stroke(); });
+  g.strokeStyle = amb(.16); g.beginPath(); g.moveTo(c.x - R*1.08, c.y); g.lineTo(c.x + R*1.08, c.y); g.moveTo(c.x, c.y - R*1.08); g.lineTo(c.x, c.y + R*1.08); g.stroke();
+  g.setLineDash([2,6]); g.beginPath(); [0.785, 2.356].forEach(a => { g.moveTo(c.x - Math.cos(a)*R, c.y - Math.sin(a)*R); g.lineTo(c.x + Math.cos(a)*R, c.y + Math.sin(a)*R); }); g.stroke(); g.setLineDash([]);
+  for (let i = 0; i < 120; i++) { const a = i/120*6.283, long = i % 10 === 0, r1 = R, r2 = R + (long ? 12 : (i % 5 === 0 ? 8 : 4));
+    g.strokeStyle = amb(long ? .7 : .35); g.beginPath(); g.moveTo(c.x + Math.cos(a)*r1, c.y + Math.sin(a)*r1); g.lineTo(c.x + Math.cos(a)*r2, c.y + Math.sin(a)*r2); g.stroke();
+    if (long) { g.fillStyle = amb(.6); g.font = '9px "JetBrains Mono", monospace'; g.fillText(String(i*3).padStart(3,'0'), c.x + Math.cos(a)*(R+24), c.y + Math.sin(a)*(R+24) + 3); } }
+  g.fillStyle = amb(.4); g.font = '9px "JetBrains Mono", monospace'; [0.25,0.5,0.75,1].forEach((m,i) => g.fillText('R'+(i+1), c.x + R*m + 12, c.y - 4));
+  // 스캔선 (뒤로 갈수록 옅어지는 부채꼴)
+  for (let i = 0; i < 46; i++) { const a0 = sweep - i*0.012; g.strokeStyle = amb(.22 * (1 - i/46)); g.lineWidth = 3; g.beginPath(); g.moveTo(c.x, c.y); g.lineTo(c.x + Math.cos(a0)*R, c.y + Math.sin(a0)*R); g.stroke(); }
+  g.lineWidth = 1.5; g.strokeStyle = amb(.9); g.beginPath(); g.moveTo(c.x, c.y); g.lineTo(c.x + Math.cos(sweep)*R, c.y + Math.sin(sweep)*R); g.stroke(); g.lineWidth = 1;
+  // 가운데 회전 장치(가는 선)
+  const busy = KEYS.some(k => state[k] === 'running'), sp = busy ? 2.4 : 1;
+  g.strokeStyle = amb(.8); g.setLineDash([6,5]); g.beginPath(); g.arc(c.x, c.y, R*0.12, tk*.01*sp, tk*.01*sp + 6.283); g.stroke();
+  g.setLineDash([2,4]); g.beginPath(); g.arc(c.x, c.y, R*0.19, -tk*.007*sp, -tk*.007*sp + 6.283); g.stroke(); g.setLineDash([]);
+  for (let s = 0; s < 3; s++) { const a = tk*.012*sp + s*2.094, r = R*0.07; g.strokeStyle = amb(.9); g.beginPath(); g.moveTo(c.x + Math.cos(a)*r, c.y + Math.sin(a)*r); g.lineTo(c.x + Math.cos(a + 2.094)*r, c.y + Math.sin(a + 2.094)*r); g.stroke(); }
+  g.fillStyle = AMB; g.shadowColor = AMB; g.shadowBlur = 14; g.beginPath(); g.arc(c.x, c.y, 3.2, 0, 6.283); g.fill(); g.shadowBlur = 0;
+  // 노드: 레이더 위 목표물
+  if (tk % 2 === 0) KEYS.forEach(k => { if (state[k] === 'running') flows.push({k, t:0, back:false, sp:.007+Math.random()*.006, off:0}); else if (state[k]==='done' && k!=='claude' && Math.random()<.2) flows.push({k, t:0, back:true, sp:.01, off:0}); });
+  flows = flows.filter(f => f.t < 1);
+  KEYS.forEach(k => { const o = orbs[k], col = nodeColor(k), run = state[k] === 'running', sz = o.r * 0.95;
+    const ang = Math.atan2(o.y - c.y, o.x - c.x); let d = (sweep - ang) % 6.283; if (d < 0) d += 6.283; const ping = d < 1.2 ? 1 - d/1.2 : 0;
+    g.strokeStyle = run ? rgba(col, .8) : amb(.22); g.setLineDash(run ? [] : [3,6]); g.beginPath(); g.moveTo(c.x, c.y); g.lineTo(o.x, o.y); g.stroke(); g.setLineDash([]);
+    // 핑 링 + 목표 브래킷
+    g.strokeStyle = rgba(col, .25 + ping*.6 + (run ? .25 : 0)); g.beginPath(); g.arc(o.x, o.y, sz*(0.8 + ping*.45 + (run ? .15*Math.sin(tk/6) : 0)), 0, 6.283); g.stroke();
+    g.strokeStyle = rgba(col, .95); g.lineWidth = 1.6; const b = sz, q = sz*.38;
+    [[-1,-1],[1,-1],[1,1],[-1,1]].forEach(([sx,sy]) => { g.beginPath(); g.moveTo(o.x + sx*b, o.y + sy*(b-q)); g.lineTo(o.x + sx*b, o.y + sy*b); g.lineTo(o.x + sx*(b-q), o.y + sy*b); g.stroke(); }); g.lineWidth = 1;
+    g.fillStyle = col; g.shadowColor = col; g.shadowBlur = 16; g.beginPath(); g.arc(o.x, o.y, run ? 5.5 + Math.sin(tk/5)*1.3 : 4.5, 0, 6.283); g.fill(); g.shadowBlur = 0;
+    g.strokeStyle = rgba(col, .5); g.beginPath(); g.moveTo(o.x - sz*1.35, o.y); g.lineTo(o.x - sz*.6, o.y); g.moveTo(o.x + sz*.6, o.y); g.lineTo(o.x + sz*1.35, o.y); g.stroke();
+    // 라벨 (고정폭)
+    const st = {idle:'STANDBY',running:'ACTIVE',done:'DONE',failed:'FAULT',limit:'LIMIT'}[state[k]], y = o.y + o.r*1.75;
+    g.fillStyle = col; g.font = '700 9.5px "JetBrains Mono", monospace'; g.fillText(N[k].tag.split(' · ')[0] + ' // ' + N[k].brand, o.x, y);
+    g.fillStyle = TXT; g.font = '700 18px "JetBrains Mono", monospace'; g.fillText(N[k].name.toUpperCase(), o.x, y + 21);
+    g.fillStyle = state[k]==='failed' ? RED : state[k]==='limit' ? AMBER : run ? col : amb(.65); g.font = '700 11px "JetBrains Mono", monospace'; g.fillText('[' + st + ']', o.x, y + 38);
+    const mn = modelName(k); g.fillStyle = amb(.75); g.font = '11px "JetBrains Mono", monospace'; g.fillText(mn, o.x, y + 55);
+    if (canChange(k)) { const w = g.measureText(mn).width, tx = o.x + w/2 + 9, ty = y + 51; g.fillStyle = col; g.beginPath(); g.moveTo(tx-3.5, ty-2); g.lineTo(tx+3.5, ty-2); g.lineTo(tx, ty+3); g.closePath(); g.fill(); }
+    const today = todayCalls(k); g.fillStyle = amb(.4); g.font = '10px "JetBrains Mono", monospace';
+    g.fillText(k==='claude' ? (claudeInfo.ok ? 'SESSION ' + fmtTok(claudeInfo.tokens) + ' TOK' : 'NO LINK') : (today ? `TODAY ${today} · ${tokSum(k,'today') ? fmtTok(tokSum(k,'today')) + ' TOK' : '- TOK'}` : 'NO CALLS TODAY'), o.x, y + 71);
+  });
+  flows.forEach(f => { f.t += f.sp; const o = orbs[f.k], t = f.back ? 1 - f.t : f.t; const x = c.x + (o.x - c.x)*t, y = c.y + (o.y - c.y)*t;
+    g.fillStyle = rgba(nodeColor(f.k), Math.sin(f.t*Math.PI)); g.fillRect(x - 2, y - 2, 4, 4); });
+  drawMissionHUD(c, R, sweep);
+}
+
+/* ===== OCEAN 테마: 심해 · 입자로 만든 생물 (해파리 / 가오리 / 물고기) ===== */
+let ocean = null;
+function initOcean() {
+  const r = Math.random;
+  ocean = {
+    snow: Array.from({length:110}, () => ({x:r(), y:r(), s:r()*1.3+.3, v:r()*.00025+.00006, ph:r()*6})),
+    bell: fib(360).filter(p => p[1] <= 0.05),                                  // 해파리 갓(반구)
+    manta: (() => { const out = []; while (out.length < 760) { const u = (r()*2 - 1), v = (r()*2 - 1), edge = .9*(1 - Math.pow(Math.abs(u), 1.6)) + .06; if (Math.abs(v) <= edge && r() < .95) out.push({u, v, s:.8 + r()*1}); } return out; })(),
+    body: fib(520),                                                          // 물고기 몸통
+    rings: [{c:'#5ff0d0', tilt:.35, n:520}, {c:'#6c9dff', tilt:-.95, n:520}, {c:'#ff9a70', tilt:1.55, n:520}]
+      .map(q => ({...q, pts:Array.from({length:q.n}, () => ({a:r()*6.283, w:(r()-.5)*.2, h:(r()-.5)*.2, s:r()*1.2+.4}))})),
+  };
+}
+const dot = (x, y, s, col, a) => { g.fillStyle = rgba(col, a); g.fillRect(x - s/2, y - s/2, s, s); };
+function halo(x, y, rad, col, a) { const gr = g.createRadialGradient(x, y, rad*.1, x, y, rad); gr.addColorStop(0, rgba(col, a)); gr.addColorStop(1, rgba(col, 0)); g.fillStyle = gr; g.beginPath(); g.arc(x, y, rad, 0, 6.283); g.fill(); }
+
+/* ----- 자유롭게 헤엄치는 움직임 (조향 + 표류) ----- */
+function angDiff(a, b) { const d = a - b; return Math.atan2(Math.sin(d), Math.cos(d)); }
+function agentInit(k) { const o = orbs[k]; return { x:o.hx, y:o.hy, th:Math.random()*6.283, turn:0, v:.5, vx:0, vy:0, ph:Math.random()*6, seed:Math.random()*100, flip:1, pitch:0 }; }
+function stepOcean() {
+  if (!ocean.ag) ocean.ag = {};
+  const c = core(), Rh = Math.min(W, H) * 0.17;
+  KEYS.forEach(k => ocean.ag[k] || (orbs[k].hx !== undefined && (ocean.ag[k] = agentInit(k))));
+  KEYS.forEach(k => { const o = orbs[k]; if (o.hx === undefined) return;
+    const a = ocean.ag[k], run = state[k] === 'running';
+    let sx = 0, sy = 0;                                      // 서로 겹치지 않게 밀어내는 힘
+    KEYS.forEach(j => { if (j === k) return; const b = ocean.ag[j]; if (!b) return; const dx = a.x - b.x, dy = a.y - b.y, d = Math.hypot(dx, dy) || 1, R = o.r * 4.6;
+      if (d < R) { const f = (R - d)/R; sx += dx/d*f; sy += dy/d*f; } });
+    if (k === 'codex') {                                    // 해파리: 맥동 추진 → 위로 솟고 천천히 가라앉으며 표류
+      a.ph += run ? .075 : .045; const thrust = Math.max(0, Math.sin(a.ph));
+      a.vy -= thrust * (run ? .085 : .05); a.vy += .0065;
+      a.vx += (Math.sin(tk*.004 + a.seed) + Math.sin(tk*.0023 + a.seed*2)) * .0035;
+      a.vx += (o.hx - a.x) * .00022 + sx*.03; a.vy += (o.hy - a.y) * .00026 + sy*.03;
+      a.vx *= .985; a.vy *= .982; a.x += a.vx; a.y += a.vy;
+    } else {                                                // 물고기·가오리: 부드럽게 방향을 틀며 돌아다님
+      const wob = (Math.sin(tk*.011 + a.seed) + Math.sin(tk*.0073 + a.seed*1.7) + Math.sin(tk*.0031 + a.seed*.6)) / 3;
+      a.turn += (wob*.024 - a.turn) * .05;
+      const dx = o.hx - a.x, dy = o.hy - a.y, d = Math.hypot(dx, dy);
+      if (d > Rh) a.th -= angDiff(a.th, Math.atan2(dy, dx)) * Math.min(.045, (d - Rh)/Rh*.04);
+      const cx = a.x - c.x, cy = a.y - c.y;
+      if (Math.hypot(cx, cy) < c.r*1.8) a.th -= angDiff(a.th, Math.atan2(cy, cx)) * .08;
+      if (sx || sy) a.th -= angDiff(a.th, Math.atan2(sy, sx)) * Math.min(.12, Math.hypot(sx, sy) * .25);
+      a.th += a.turn;
+      const target = (k === 'gemini' ? .55 : .75) * (run ? 2.0 : 1);
+      a.v += (target - a.v) * .03; const beat = 1 + (k === 'claude' ? .24 : .12) * Math.cos(a.ph);   // 꼬리를 칠 때마다 앞으로 밀려 나감
+      a.vx = Math.cos(a.th) * a.v * beat; a.vy = Math.sin(a.th) * a.v * .8 * beat;
+      a.x += a.vx; a.y += a.vy; a.ph += (run ? .17 : .085) * (.7 + a.v * .5);
+    }
+    // 벽: 가까워지면 안쪽으로 부드럽게 돌려세움
+    const mx = 95, mt = 110, mb = 310, wx = a.x < mx ? 1 : (a.x > W - mx ? -1 : 0), wy = a.y < mt ? 1 : (a.y > H - mb ? -1 : 0);
+    if (wx || wy) { if (k === 'codex') { a.vx += wx*.02; a.vy += wy*.03; } else a.th -= angDiff(a.th, Math.atan2(wy*.7, wx || Math.cos(a.th))) * .08; }
+    const kx = a.x - c.x, ky = a.y - c.y, kd = Math.hypot(kx, ky) || 1, kmin = c.r*1.65;   // 코어 둘레는 모두 비켜감
+    if (kd < kmin) { const f = (kmin - kd)/kmin; a.x += kx/kd*f*4; a.y += ky/kd*f*4; if (k === 'codex') { a.vx += kx/kd*f*.08; a.vy += ky/kd*f*.08; } else a.th -= angDiff(a.th, Math.atan2(ky, kx))*.1; }
+    a.x = Math.max(40, Math.min(W - 40, a.x)); a.y = Math.max(60, Math.min(H - 270, a.y));
+    // 옆모습(물고기) 방향 전환과 기울기
+    const dirT = Math.cos(a.th) >= 0 ? 1 : -1; a.flip += (dirT - a.flip) * .06;
+    a.pitch += (Math.max(-.55, Math.min(.55, Math.atan2(a.vy, Math.abs(a.vx) + .08))) - a.pitch) * .07;
+    o.x = a.x; o.y = a.y;
+  });
+}
+function moveBrands() {
+  KEYS.forEach(k => { const el = document.querySelector(`.brand[data-k="${k}"]`), o = orbs[k]; if (!el) return; const [, dx, dy] = N[k].card;
+    el.style.left = (o.x + dx*W) + 'px'; el.style.top = (o.y + dy*H - 26) + 'px'; });
+}
+
+// 해파리: 갓을 오므리며 솟구치고, 촉수는 움직임 반대쪽으로 끌려옴
+function drawJellyP(k, col, run) {
+  const o = orbs[k], a = ocean.ag[k], thrust = Math.max(0, Math.sin(a.ph)), sw = 1 - .12*thrust, sh = 1 + .1*thrust, s = o.r*1.0;
+  g.save(); g.translate(a.x, a.y); g.rotate(Math.max(-.35, Math.min(.35, a.vx*.9)));
+  halo(0, 0, s*2.6, col, run ? .26 : .12);
+  const rot = tk*.008, cr = Math.cos(rot), sr = Math.sin(rot);
+  ocean.bell.forEach(p => { const x = p[0]*cr + p[2]*sr, z = -p[0]*sr + p[2]*cr, dp = (z + 1)/2; dot(x*s*1.05*sw, p[1]*s*.95*sh, .9 + dp*1.5, col, (run ? .3 : .2) + dp*.6); });
+  for (let i = 0; i < 48; i++) { const t = i/48*6.283 + rot, w = Math.sin(t*3 + a.ph)*s*.05; dot(Math.cos(t)*s*1.05*sw, w + Math.sin(t)*s*.12, 1.7, col, .75); }
+  for (let i = 0; i < 12; i++) { const t = i/12*6.283 + rot*.5, bx = Math.cos(t)*s*.85*sw, by = Math.sin(t)*s*.1, long = i % 3 === 0;
+    for (let j = 1; j <= (long ? 32 : 20); j++) { const lag = -a.vx*j*2.6, sway = Math.sin(a.ph*.8 + j*.45 + i)*j*(long ? 1.4 : 1.0);
+      dot(bx + sway + lag, by + j*s*.085 - Math.max(0, -a.vy)*j*1.2 + Math.max(0, a.vy)*j*.5, long ? 1.7 : 1.1, col, (long ? .6 : .4)*(1 - j/38)); } }
+  halo(0, -s*.1, s*.5, '#ffffff', run ? .22 : .1);
+  g.restore();
+}
+// 가오리(위에서 본 모습): 어느 방향으로든 돌며 우아하게 날갯짓
+function drawMantaP(k, col, run) {
+  const o = orbs[k], a = ocean.ag[k], L = o.r*1.7, ph = a.ph, flap = Math.cos(ph);
+  g.save(); g.translate(a.x, a.y); g.rotate(a.th);
+  halo(0, 0, L*1.9, col, run ? .24 : .1);
+  ocean.manta.forEach(q => { const au = Math.abs(q.u), wave = Math.sin(ph - au*2.4 + 1.3), span = 1.12*(.86 + .14*flap);
+    const lx = q.v*L*.7 - Math.pow(au, 1.4)*L*.55 + wave*au*L*.2 + L*.12, ly = q.u*L*span, depth = (wave + 1)/2, ridge = au < .1 && Math.abs(q.v) < .8;
+    dot(lx, ly, ridge ? 2 : q.s + depth*.8, col, ridge ? .85 : .2 + depth*.45*(1 - au*.35)); });
+  for (let k2 = 0; k2 < 36; k2++) { const tt = k2/36; dot(-L*.62 - tt*L*1.3, Math.sin(ph*.9 - tt*5)*tt*L*.2, 1.5 - tt*.8, col, .7*(1 - tt)); }   // 꼬리
+  dot(L*.52, -L*.09, 2.2, '#ffffff', .85); dot(L*.52, L*.09, 2.2, '#ffffff', .85);
+  g.restore();
+}
+// 물고기(옆모습): 꼬리 물결, 방향을 틀 때 몸이 돌아섬, 위아래로 움직이면 기울어짐
+function drawFishP(k, col, run) {
+  const o = orbs[k], a = ocean.ag[k], L = o.r*1.7, Hh = o.r*.78, wagAmp = .55 + a.v*.5;
+  g.save(); g.translate(a.x, a.y); g.rotate(a.pitch * a.flip); g.scale(a.flip, 1);
+  halo(0, 0, L*2.0, col, run ? .24 : .1);
+  const wag = lx => { const s = Math.max(0, Math.min(1, (L*.55 - lx)/(L*1.9))); return Math.sin(a.ph - lx*.04)*(.08 + .92*s*s)*L*.2*wagAmp; };   // 머리는 조금, 꼬리로 갈수록 크게 — 몸 전체가 파도처럼
+  ocean.body.forEach(p => { const lx = p[0]*L, taper = 1 - Math.pow(Math.abs(p[0]), 2.2)*.55 - (p[0] < 0 ? Math.abs(p[0])*.25 : 0), z = p[2], dp = (z + 1)/2;
+    dot(lx, p[1]*Hh*taper + wag(lx), 1 + dp*1.5, col, .22 + dp*.65); });
+  for (let q = 0; q < 40; q++) { const tt = q/40, lx = L*(.55 - tt*1.05); dot(lx, Hh*.12*Math.sin(tt*9 + a.ph*.3) + wag(lx), 1.2, '#ffffff', .22); }
+  for (const ray of [-1, -.6, -.2, .2, .6, 1]) for (let q = 0; q <= 16; q++) { const tt = q/16, lx = -L*(.92 + tt*.7); dot(lx, ray*tt*Hh*1.45 + wag(lx), 1.3, col, .6*(1 - tt*.6)); }
+  for (let q = 0; q <= 22; q++) { const tt = q/22, lx = L*(.3 - tt*.75); dot(lx, -Hh*(.95 + Math.sin(tt*3.14)*.8) + wag(lx), 1.5, col, .75); }
+  for (let q = 0; q <= 8; q++) { const tt = q/8, lx = L*(.2 - tt*.3); dot(lx, Hh*(.6 + tt*.55) + wag(lx) + Math.sin(a.ph*1.3)*tt*3, 1.3, col, .6); }
+  dot(L*.62, -Hh*.15, 2.8, '#ffffff', .95);
+  g.restore();
+}
+/* ===== 지나가는 바다 생물들 (고래·상어·거북이·오징어·물고기 떼·작은 해파리) ===== */
+const rnd = (a, b) => a + Math.random()*(b - a);
+const AMB_EVERY = { whale:[1800, 3000], shark:[2000, 3200], turtle:[2600, 3800], squid:[2300, 3400], school:[1300, 2200], dolphin:[2200, 3400], seahorse:[1800, 2800], manta:[2600, 3600], sunfish:[3000, 4200] };
+const AMB_MAX = { whale:3, shark:2, turtle:2, squid:2, school:3, dolphin:3, seahorse:3, manta:1, sunfish:1 };
+function initAmbient() {
+  ocean.amb = []; ocean.next = {};
+  ocean.whaleBody = fib(900); ocean.sharkBody = fib(420); ocean.shell = fib(300).filter(p => p[1] <= .1);
+  Object.keys(AMB_EVERY).forEach(t => ocean.next[t] = tk + rnd(AMB_EVERY[t][0], AMB_EVERY[t][1])*.45);
+  ['school', 'shark', 'turtle', 'whale', 'squid', 'dolphin', 'seahorse', 'manta', 'sunfish'].forEach(t => spawnGroup(t, true));        // 처음부터 바다가 비어 보이지 않게
+  for (let i = 0; i < 4; i++) spawnAmb('jelly', true);
+}
+function spawnAmb(type, mid, opt = {}) {
+  const dir = opt.dir || (Math.random() < .5 ? 1 : -1), e = { type, dir, ph:Math.random()*6, seed:Math.random()*100, age:0, vy:0, pitch:0 };
+  const out = L => mid ? rnd(W*.12, W*.88) : (dir > 0 ? -L*1.3 - 40 : W + L*1.3 + 40);
+  if (type === 'whale')  Object.assign(e, { L:W*.37, y:rnd(H*.14, H*.4), v:.3, a:.5 });
+  if (type === 'shark')  Object.assign(e, { L:W*.10, y:rnd(H*.2, H*.62), v:.85, a:.5 });
+  if (type === 'turtle') Object.assign(e, { L:W*.045, y:rnd(H*.25, H*.6), v:.34, a:.65 });
+  if (type === 'squid')  Object.assign(e, { L:W*.04, y:rnd(H*.2, H*.6), v:.15, vv:.15, a:.6, pulse:Math.random()*6 });
+  if (type === 'dolphin')  Object.assign(e, { L:W*.065, y:rnd(H*.3, H*.55), v:1.1, a:.6, arc:0, dy:0, dp:0 });
+  if (type === 'seahorse') Object.assign(e, { L:W*.02, y:rnd(H*.2, H*.55), v:.16, a:.75 });
+  if (type === 'manta')    Object.assign(e, { L:W*.07, y:rnd(H*.15, H*.5), v:.38, a:.5 });
+  if (type === 'sunfish')  Object.assign(e, { L:W*.055, y:rnd(H*.25, H*.6), v:.22, a:.5 });
+  if (type === 'school') { const big = Math.random() < .4; Object.assign(e, { L:W*.06, y:rnd(H*.15, H*.62), v:big ? 1.45 : 1.1, a:big ? .6 : .7, s:big ? W*.011 : W*.0042, col:big ? '#9ad0e6' : '#cdeaf2', mem:[] });
+    const n = big ? Math.floor(rnd(5, 9)) : Math.floor(rnd(22, 34)); for (let i = 0; i < n; i++) e.mem.push({ ox:rnd(-1, 1)*W*.06, oy:rnd(-1, 1)*W*.04, x:0, y:0, vx:dir*1.1, vy:0, ph:Math.random()*6 }); }
+  if (type === 'jelly')  { Object.assign(e, { L:rnd(W*.02, W*.035), x:rnd(W*.08, W*.92), y:rnd(H*.1, H*.7), a:.42, vx:0, vy:0, dir:1 }); e.x = e.x; }
+  if (type !== 'jelly') e.x = out(e.L);
+  if (type === 'school') e.mem.forEach(m => { m.x = e.x + m.ox; m.y = e.y + m.oy; });
+  if (opt.dx) e.x -= e.dir*opt.dx;
+  ocean.amb.push(e); return e;
+}
+function stepAmbient() {
+  Object.keys(AMB_EVERY).forEach(t => { if (tk >= ocean.next[t]) { if (ocean.amb.filter(e => e.type === t).length < AMB_MAX[t]) spawnGroup(t, false); ocean.next[t] = tk + rnd(AMB_EVERY[t][0], AMB_EVERY[t][1]); } });
+  ocean.amb = ocean.amb.filter(e => {
+    e.age++;
+    if (e.type === 'jelly') {                                              // 작은 해파리: 맥동하며 천천히 표류
+      e.ph += .04; const th = Math.max(0, Math.sin(e.ph)); e.vy -= th*.03; e.vy += .004; e.vx += Math.sin(tk*.003 + e.seed)*.002; e.vx *= .985; e.vy *= .98; e.x += e.vx; e.y += e.vy;
+      if (e.y < -40) e.y = H + 20; if (e.y > H + 40) e.y = -20; if (e.x < -40) e.x = W + 20; if (e.x > W + 40) e.x = -20; return true; }
+    if (e.type === 'school') {                                             // 물고기 떼: 리더 + 군집(응집·정렬·분리·포식자 회피)
+      const t = e.age; e.y += Math.sin(t*.006 + e.seed)*.35; e.x += e.dir*e.v;
+      let ax = 0, ay = 0; e.mem.forEach(m => { ax += m.vx; ay += m.vy; }); ax /= e.mem.length; ay /= e.mem.length;
+      e.mem.forEach(m => { m.ph += .5 + Math.hypot(m.vx, m.vy)*.1;
+        let fx = (e.x + m.ox - m.x)*.012 + (ax - m.vx)*.06, fy = (e.y + m.oy - m.y)*.012 + (ay - m.vy)*.06;
+        e.mem.forEach(o2 => { if (o2 !== m) { const dx = m.x - o2.x, dy = m.y - o2.y, d = Math.hypot(dx, dy); if (d < e.s*4.2 && d > 0) { fx += dx/d*.05; fy += dy/d*.05; } } });
+        KEYS.forEach(k => { const o = orbs[k]; const dx = m.x - o.x, dy = m.y - o.y, d = Math.hypot(dx, dy); if (d < o.r*2.6) { fx += dx/d*.35; fy += dy/d*.35; } });   // 큰 생물이 다가오면 흩어짐
+        m.vx += fx; m.vy += fy; const sp = Math.hypot(m.vx, m.vy), lim = e.v*1.5; if (sp > lim) { m.vx *= lim/sp; m.vy *= lim/sp; } m.x += m.vx; m.y += m.vy; });
+      return (e.dir > 0 ? e.x < W + e.L*1.4 + 120 : e.x > -e.L*1.4 - 120); }
+    // 고래·상어·거북이·오징어: 부드러운 항로 + 몸 움직임에 맞춘 속도 변화
+    let spd = e.v;
+    if (e.type === 'whale')  { e.ph += .02; }
+    if (e.type === 'shark')  { e.ph += .1; spd = e.v*(1 + .12*Math.cos(e.ph)); }
+    if (e.type === 'turtle') { e.ph += .045; spd = e.v*(.55 + .9*Math.max(0, -Math.cos(e.ph))); }
+    if (e.type === 'squid')  { e.pulse += .055; const thrust = Math.pow(Math.max(0, Math.sin(e.pulse)), 3); e.vv += ((.1 + thrust*1.1) - e.vv)*.12; spd = e.vv; e.ph += .08; }
+    if (e.type === 'dolphin')  { e.arc += .04; e.ph += .22; const dyN = -Math.max(0, Math.sin(e.arc))*H*.1; e.dp = dyN - e.dy; e.dy = dyN; }   // 솟구쳤다 잠수하는 포물선 헤엄
+    if (e.type === 'manta')    { e.ph += .035; spd = e.v*(1 + .1*Math.cos(e.ph)); }
+    if (e.type === 'sunfish')  { e.ph += .06; }
+    if (e.type === 'seahorse') { e.ph += .5; }
+    e.vy += (Math.sin(e.age*.0042 + e.seed)*.16*e.v - e.vy)*.02; if (e.y < H*.1) e.vy += .01; if (e.y > H*.7) e.vy -= .01;
+    e.x += e.dir*spd; e.y += e.vy; e.pitch += (Math.max(-.6, Math.min(.6, Math.atan2(e.vy + (e.type === 'dolphin' ? e.dp*2 : 0), Math.max(.2, spd)))) - e.pitch)*(e.type === 'dolphin' ? .12 : .05);
+    return e.dir > 0 ? e.x < W + e.L*1.5 + 120 : e.x > -e.L*1.5 - 120;
+  });
+}
+function tinyFish(m, s, col, a) {
+  const ang = Math.atan2(m.vy, m.vx), c = Math.cos(ang), sn = Math.sin(ang);
+  for (let i = 0; i < 4; i++) dot(m.x - c*i*s*.85, m.y - sn*i*s*.85, s*(.95 - i*.16), col, a);
+  const w = Math.sin(m.ph)*s*.9; dot(m.x - c*s*3.3 - sn*w, m.y - sn*s*3.3 + c*w, s*.7, col, a*.8);
+}
+function drawAmbient() {
+  g.globalCompositeOperation = 'lighter';
+  ocean.amb.forEach(e => { const a = e.a;
+    if (e.type === 'school') { e.mem.forEach(m => tinyFish(m, e.s, e.col || '#cdeaf2', a*.85)); return; }
+    if (e.type === 'jelly') { const th = Math.max(0, Math.sin(e.ph)), s = e.L; g.save(); g.translate(e.x, e.y); g.rotate(Math.max(-.3, Math.min(.3, e.vx*.8)));
+      for (let i = 0; i < ocean.bell.length; i += 3) { const p = ocean.bell[i]; dot(p[0]*s*(1 - .1*th), p[1]*s*(1 + .08*th), 1 + (p[2] + 1)*.4, '#9fe0ff', a*(.3 + (p[2] + 1)*.35)); }
+      for (let i = 0; i < 7; i++) { const bx = -s*.8 + i*s*.27; for (let j = 1; j <= 14; j++) dot(bx + Math.sin(e.ph + j*.5 + i)*j*.9 - e.vx*j*2, j*s*.14, 1, '#9fe0ff', a*.45*(1 - j/16)); }
+      g.restore(); return; }
+    g.save(); g.translate(e.x, e.y + (e.dy || 0)); g.rotate(e.type === 'seahorse' ? 0 : e.pitch*e.dir); g.scale(e.dir, 1);
+    if (e.type === 'dolphin')  drawDolphin(e);
+    if (e.type === 'seahorse') drawSeahorse(e);
+    if (e.type === 'manta')    drawMantaAmb(e);
+    if (e.type === 'sunfish')  drawSunfish(e);
+    if (e.type === 'whale')  drawWhale(e);
+    if (e.type === 'shark')  drawShark(e);
+    if (e.type === 'turtle') drawTurtle(e);
+    if (e.type === 'squid')  drawSquid(e);
+    g.restore(); });
+  g.globalCompositeOperation = 'source-over';
+}
+const whaleR = t => .2*(.12 + .88*Math.pow(Math.sin(Math.PI*.5*Math.min(1, t/.4)), .65))*(t > .4 ? 1 - .93*Math.pow((t - .4)/.6, 1.5) : 1);   // 주둥이(0)→꼬리(1) 몸통 굵기: 굵은 머리와 앞몸, 가늘어지는 꼬리
+function whaleSurface() { const pts = [], N = 110, M = 30;
+  for (let i = 0; i <= N; i++) { const t = i/N, r = whaleR(t); for (let j = 0; j < M; j++) { const ph = j/M*6.283; pts.push([t + (Math.random() - .5)*.008, r*Math.sin(ph)*(1 + (Math.random() - .5)*.1), r*Math.cos(ph)]); } }
+  return pts; }
+function drawWhale(e) {                                                      // 고래: 거대한 몸, 배 주름, 입·눈, 긴 가슴지느러미, 몸 전체 물결 + 큰 꼬리 지느러미, 가끔 물 뿜기
+  const L = e.L, a = e.a, S = ocean.whaleSurf || (ocean.whaleSurf = whaleSurface()), top = '#7ea7c9', under = '#cfe3f1';
+  const u = lx => Math.max(0, (-lx/L + .25)/1.25), wave = lx => Math.sin(e.ph - lx*.009)*u(lx)*u(lx)*L*.2;
+  { const N2 = 70; g.beginPath();                                                                                                                  // 몸통 윤곽을 은은한 빛으로 채움(점 격자가 아니라 고래 실루엣이 먼저 보이게)
+    for (let i = 0; i <= N2; i++) { const lx = L*(1 - 2*i/N2), y = -whaleR(i/N2)*L + wave(lx); i ? g.lineTo(lx, y) : g.moveTo(lx, y); }
+    for (let i = N2; i >= 0; i--) { const lx = L*(1 - 2*i/N2); g.lineTo(lx, whaleR(i/N2)*L + wave(lx)); }
+    g.closePath(); const gr = g.createLinearGradient(0, -L*.2, 0, L*.2); gr.addColorStop(0, `rgba(96,148,190,${a*.55})`); gr.addColorStop(.55, `rgba(130,178,210,${a*.42})`); gr.addColorStop(1, `rgba(205,228,243,${a*.5})`);
+    g.fillStyle = gr; g.fill(); g.strokeStyle = `rgba(190,225,245,${a*.55})`; g.lineWidth = 1.4; g.stroke(); }
+  S.forEach(p => { const lx = L*(1 - 2*p[0]), belly = p[1] > 0, dp = (p[2] + 1)/2;
+    dot(lx, p[1]*L + wave(lx), 1.2 + dp*1.7, belly ? under : top, a*(.2 + dp*.75)*(belly ? .8 : 1)); });
+  for (const k of [.3, .45, .6, .75, .9]) for (let i = 0; i <= 90; i++) { const t = .05 + i/90*.46, lx = L*(1 - 2*t); dot(lx, whaleR(t)*L*k + wave(lx), 1.1, '#eef7fc', a*.38); }   // 배 주름(목~배)
+  for (let i = 0; i <= 44; i++) { const t = i/44*.24, lx = L*(1 - 2*t); dot(lx, whaleR(t)*L*(.22 - t*.5) + wave(lx), 1.6, '#eef7fc', a*.6); }                                // 입 선
+  dot(L*.58, whaleR(.21)*L*.12 + wave(L*.58), 2.8, '#ffffff', a*1.4);
+  const ax = L*.34, ay = whaleR(.33)*L*.75 + wave(ax), fa = Math.sin(e.ph*.7)*.3;                                                                                                  // 긴 가슴지느러미
+  for (let i = 0; i <= 26; i++) { const s = i/26; for (const w of [-1, 0, 1]) dot(ax - s*L*.2*(1 + fa) + w*(1 - s)*L*.018, ay + s*L*.3, 1.6, under, a*.7*(1 - s*.3)); }
+  const dx = L*(1 - 2*.7); for (let i = 0; i <= 12; i++) { const s = i/12; dot(dx - s*L*.07, -whaleR(.7)*L + wave(dx) - Math.sin(s*1.5)*L*.05*(1 - s*.5), 1.5, top, a*.85); }          // 작은 등지느러미
+  const tx = -L*.97, ty = wave(tx), sp = L*.3*(.45 + .55*Math.abs(Math.sin(e.ph - tx*.009 - .6)));
+  g.beginPath(); g.moveTo(tx + L*.03, ty); g.lineTo(tx - L*.15, ty - sp); g.quadraticCurveTo(tx - L*.07, ty, tx - L*.15, ty + sp); g.closePath();            // 꼬리 지느러미 면
+  g.fillStyle = `rgba(120,168,205,${a*.5})`; g.fill(); g.strokeStyle = `rgba(190,225,245,${a*.5})`; g.stroke();
+  g.beginPath(); g.moveTo(ax, ay); g.quadraticCurveTo(ax - L*.12, ay + L*.12, ax - L*.2*(1 + fa), ay + L*.3); g.quadraticCurveTo(ax - L*.02, ay + L*.16, ax + L*.02, ay); g.closePath();   // 가슴지느러미 면
+  g.fillStyle = `rgba(190,220,238,${a*.5})`; g.fill();
+                                                                                  // 가로로 넓은 꼬리 지느러미
+  for (const r of [0, .35, .7]) for (let q = -16; q <= 16; q++) { const uu = q/16; dot(tx - Math.abs(uu)*L*.11 - L*.02 - r*L*.04, ty + uu*sp*(1 - r*.25), 1.7, top, a*.85*(1 - r*.3)); }
+  const cyc = e.age % 520;                                                                                                                                                          // 가끔 물 뿜기
+  if (cyc < 90) { const t = cyc/90, bx = L*.6, by = -whaleR(.2)*L + wave(L*.6);
+    for (let k = 0; k < 44; k++) { const rise = (1 - Math.pow(1 - Math.min(1, t*1.5 + k/80), 2))*L*.3*(.4 + (k % 5)/8); dot(bx + ((k % 9) - 4)*t*L*.014, by - rise + t*t*L*.08, 1.7, '#e6f6ff', a*(1 - t)*1.1); } }
+}
+function drawShark(e) {                                                      // 상어: 몸이 S자로 휘며 빠르게, 큰 등지느러미, 위 날개가 긴 꼬리
+  const L = e.L, Hh = L*.19, col = '#a9c2cf', a = e.a, wave = lx => Math.sin(e.ph - lx*.02)*Math.pow(Math.max(0, (-lx/L + .3)/1.3), 2)*L*.1;
+  ocean.sharkBody.forEach(p => { const lx = p[0]*L, aa = Math.abs(p[0]), taper = Math.pow(Math.max(0, 1 - Math.pow(aa, p[0] > 0 ? 1.6 : 2.4)), .55), dp = (p[2] + 1)/2;
+    dot(lx, p[1]*Hh*taper + wave(lx), .9 + dp*1.2, col, a*(.25 + dp*.7)); });
+  for (let i = 0; i <= 16; i++) { const t = i/16; dot(L*(.05 - t*.4), -Hh*(.9 + Math.sin(t*3.14)*1.1) + wave(L*.05), 1.4, col, a*.85); }          // 등지느러미
+  for (let i = 0; i <= 12; i++) { const t = i/12; dot(L*(.25 - t*.3), Hh*(.6 + t*1.35) + wave(L*.2), 1.4, col, a*.7); }                               // 가슴지느러미
+  for (let i = 0; i <= 18; i++) { const t = i/18, tx = -L*(.95 + t*.35); dot(tx, wave(tx) - t*Hh*2.2, 1.5, col, a*.85); if (i < 11) dot(-L*(.95 + t*.25), wave(-L) + t*Hh*1.2, 1.4, col, a*.6); }   // 꼬리(위 날개가 더 큼)
+  dot(L*.78, -Hh*.2, 2, '#ffffff', a*1.3);
+}
+function drawTurtle(e) {                                                     // 거북이: 앞지느러미로 노 젓기(힘차게 밀고 천천히 되돌림), 머리가 위아래로 까딱
+  const L = e.L, col = '#8fd0a6', a = e.a, bob = Math.sin(e.ph)*L*.04;
+  ocean.shell.forEach(p => dot(p[0]*L, p[1]*L*.55 + bob*.5, .9 + (p[2] + 1)*.7, col, a*(.3 + (p[2] + 1)*.35)));
+  for (let i = -10; i <= 10; i++) dot(i/10*L*.95, L*.1 + bob*.4, 1.1, col, a*.45);
+  for (let i = 0; i <= 6; i++) dot(L*(1.0 + i*.08), -L*.05 + bob + i*.01*L, 1.7 - i*.08, col, a*.9); dot(L*1.45, -L*.1 + bob, 2, '#ffffff', a*1.2);
+  const stroke = Math.sin(e.ph), fl = (ax, ay, len, ang, w) => { for (let i = 0; i <= 14; i++) { const t = i/14, px = ax - Math.cos(ang)*len*t, py = ay + Math.sin(ang)*len*t; dot(px, py, w*(1 - t*.5), col, a*.85*(1 - t*.3)); } };
+  fl(L*.55, L*.12, L*.95, .55 + stroke*.75, 2.1); fl(L*.55, L*.12, L*.9, .75 - stroke*.7, 1.6);
+  fl(-L*.7, L*.08, L*.5, .5 - stroke*.4, 1.5);
+}
+function drawSquid(e) {                                                      // 오징어: 물을 뿜을 때 몸통이 오므라들며 튀어 나가고, 촉수는 뒤로 끌려감
+  const S = e.L, col = '#e29bbd', a = e.a, thrust = Math.pow(Math.max(0, Math.sin(e.pulse)), 3), contract = 1 - .16*thrust;
+  for (let i = 0; i < 40; i++) { const t = i/40, w = S*.3*(1 - t*.68)*contract; for (const sg of [-1, -.5, 0, .5, 1]) dot(-t*S*3.3, sg*w, 1.2, col, a*(.3 + (1 - Math.abs(sg))*.45)); }
+  for (let i = 0; i <= 12; i++) { const t = i/12; dot(-S*(2.2 + t*.9), -S*.5*Math.sin(t*3.14)*1.0, 1.4, col, a*.6); dot(-S*(2.2 + t*.9), S*.5*Math.sin(t*3.14)*1.0, 1.4, col, a*.6); }   // 지느러미
+  for (let i = 0; i < 8; i++) { const off = (i - 3.5)*S*.07; for (let j = 1; j <= 18; j++) { const t = j/18, lag = Math.sin(e.ph - t*4 + i)*t*S*.25; dot(S*.3 + t*S*1.5*(1 - thrust*.35), off + lag, 1.3 - t*.5, col, a*.7*(1 - t*.5)); } }
+  dot(S*.15, -S*.14, 2, '#ffffff', a*1.3); dot(S*.15, S*.14, 2, '#ffffff', a*1.3);
+}
+
+function spawnGroup(type, mid) {                                             // 무리로 나타나는 생물(돌고래 3마리, 해마 2마리, 새끼 딸린 고래)
+  const dir = Math.random() < .5 ? 1 : -1;
+  const make = (n, gap, jy, extra) => { const list = [];
+    for (let i = 0; i < n; i++) { const e = spawnAmb(type, mid, { dir, dx:i*gap, y:undefined }); if (extra) extra(e, i); list.push(e); }
+    if (mid) list.forEach((e, i) => { e.x = list[0].x - dir*i*gap; e.y = list[0].y + i*jy; });
+    else list.forEach((e, i) => { e.y = list[0].y + i*jy; });
+    return list; };
+  if (type === 'dolphin') { const v = rnd(1.0, 1.25); make(3, W*.11, H*.03, (e, i) => { e.v = v; e.arc = i*.55; }); return; }
+  if (type === 'seahorse') { make(2, W*.05, H*.05); return; }
+  if (type === 'whale') { const [w] = make(1, 0, 0); if (Math.random() < .4) { const c = spawnAmb('whale', mid, { dir, dx:W*.16 }); c.L = w.L*.42; c.a = w.a*.9; c.v = w.v*1.05; c.y = w.y + w.L*.2; c.seed = w.seed; if (mid) c.x = w.x - dir*W*.16; } return; }
+  spawnAmb(type, mid);
+}
+function drawDolphin(e) {                                                    // 돌고래: 유선형 몸 + 부리, 낫 모양 등지느러미, 수평 꼬리 지느러미가 위아래로 힘차게
+  const L = e.L, Hh = L*.17, col = '#a9cbe3', a = e.a, wave = lx => Math.sin(e.ph - lx*.02)*Math.pow(Math.max(0, (-lx/L + .25)/1.25), 2)*L*.14;
+  ocean.sharkBody.forEach(p => { const lx = p[0]*L, aa = Math.abs(p[0]), taper = Math.pow(Math.max(0, 1 - Math.pow(aa, p[0] > 0 ? 1.7 : 2.2)), .55), dp = (p[2] + 1)/2, belly = p[1] > 0;
+    dot(lx, p[1]*Hh*taper + wave(lx), .9 + dp*1.2, belly ? '#e6f2fa' : col, a*(.25 + dp*.7)*(belly ? .75 : 1)); });
+  for (let i = 0; i <= 8; i++) dot(L*(.96 + i*.035), Hh*.1, 1.5 - i*.08, col, a*.85);
+  for (let i = 0; i <= 14; i++) { const t = i/14; dot(L*(.12 - t*.34), -Hh*(.9 + Math.sin(t*2.6)*.85*(1 - t*.3)) + wave(L*.1), 1.4, col, a*.9); }
+  for (let i = 0; i <= 10; i++) { const t = i/10; dot(L*(.36 - t*.26), Hh*(.5 + t*1.1) + wave(L*.3), 1.4, col, a*.75); }
+  const tx = -L*1.0; for (let q = -8; q <= 8; q++) { const u = q/8; dot(tx - Math.abs(u)*L*.07, wave(tx) + u*L*.17*(.6 + .4*Math.abs(Math.sin(e.ph - 1))), 1.5, col, a*.9); }
+  dot(L*.7, -Hh*.22, 2, '#ffffff', a*1.3);
+}
+function drawSeahorse(e) {                                                   // 해마: 세로로 선 몸, 말린 꼬리, 떨리는 등지느러미, 둥실 오르내림
+  const S = e.L, col = '#f0c36b', a = e.a, bob = Math.sin(e.ph*.06 + e.seed)*S*.35, N = 34, pts = [];
+  let x = 0, y = -S*1.5 + bob, ang = 1.45;
+  for (let i = 0; i <= N; i++) { const t = i/N; pts.push([x, y, t, ang]); const ds = S*3.4/N, kappa = t < .18 ? -.55 : (t < .62 ? .12 : .12 + (t - .62)*14); ang += kappa*ds/S*.9; x += Math.cos(ang)*ds; y += Math.sin(ang)*ds; }
+  pts.forEach(([px, py, t, an]) => { const w = S*(.28*(1 - t*.82) + (t > .15 && t < .5 ? .22*Math.sin((t - .15)/.35*Math.PI) : 0)), nx = -Math.sin(an), ny = Math.cos(an);
+    for (const f of [-1, -.5, 0, .5, 1]) dot(px + nx*w*f, py + ny*w*f, 1.2, col, a*(.3 + (1 - Math.abs(f))*.5));
+    if (t > .22 && t < .58) { const off = w + S*.09*(1 + Math.sin(e.ph*1.6 + t*30)); dot(px + nx*off, py + ny*off, 1.1, col, a*.6); } });   // 등지느러미
+  const h = pts[0]; for (let i = 0; i <= 10; i++) dot(h[0] + S*.12 + i*S*.07, h[1] - S*.02 + i*S*.004, 1.5 - i*.06, col, a*.9);
+  dot(h[0] + S*.08, h[1] - S*.12, 2, '#ffffff', a*1.4); for (let i = 0; i < 4; i++) dot(h[0] - S*.05 - i*S*.05, h[1] - S*.22 - i*S*.02, 1.2, col, a*.7);
+}
+function drawMantaAmb(e) {                                                   // 만타가오리(지나가는 것): 위에서 본 모습으로 느리게 활강
+  const L = e.L, flap = Math.cos(e.ph), col = '#83b6da', a = e.a;
+  ocean.manta.forEach(q => { const au = Math.abs(q.u), wave = Math.sin(e.ph - au*2.4 + 1.3), span = 1.12*(.86 + .14*flap);
+    dot(q.v*L*.7 - Math.pow(au, 1.4)*L*.55 + wave*au*L*.2 + L*.12, q.u*L*span, q.s*.85, col, a*(.2 + (wave + 1)/2*.4)); });
+  for (let k = 0; k < 30; k++) { const tt = k/30; dot(-L*.62 - tt*L*1.2, Math.sin(e.ph*.9 - tt*5)*tt*L*.18, 1.3, col, a*.7*(1 - tt)); }
+}
+function drawSunfish(e) {                                                    // 개복치: 둥글고 납작한 몸, 위아래 큰 지느러미를 느리게 저으며 이동
+  const L = e.L, Hh = L*.62, col = '#c9cbe0', a = e.a, fl = Math.sin(e.ph);
+  ocean.body.forEach(p => { const lx = p[0]*L*.9, ly = p[1]*Hh*(1 - Math.pow(Math.abs(p[0]), 3)*.45), dp = (p[2] + 1)/2; dot(lx, ly, .9 + dp*1.2, col, a*(.22 + dp*.6)); });
+  for (let i = 0; i <= 16; i++) { const t = i/16; dot(-L*(.3 + t*.22) + fl*t*L*.12, -Hh*(.9 + t*1.0), 1.4, col, a*.8); dot(-L*(.3 + t*.22) - fl*t*L*.12, Hh*(.9 + t*1.0), 1.4, col, a*.8); }
+  for (let i = -8; i <= 8; i++) dot(-L*.98 + Math.sin(e.ph*.8 + i*.2)*L*.03, i/8*Hh*.6, 1.4, col, a*.8);
+  dot(L*.62, -Hh*.12, 2.2, '#ffffff', a*1.3);
+}
+
+/* ===== SOLAR 테마: 태양계 — 3D 궤도 역학(타원 궤도·기울기·케플러 속도·원근·자전·달) ===== */
+let solar = null, hoverK = null;
+const KEP = .0019;                                                           // 케플러 상수: 평균 운동 n = KEP × a^-1.5 (안쪽이 훨씬 빠름)
+const OR = {                                                                 // 세 AI 행성(각자 다른 타원·기울기·자전축·달)
+  claude: { a:.27, e:.07, inc:.05, om:.4,  w:.8,  type:'earth',  tilt:.41, spin:.012, moons:[{ d:2.4, n:.035, inc:.09 }] },
+  codex:  { a:.43, e:.11, inc:-.1, om:2.1, w:1.5, type:'gas',    tilt:.1,  spin:.02,  moons:[{ d:2.1, n:.05, inc:0 }, { d:2.9, n:.03, inc:.05 }, { d:3.8, n:.018, inc:-.04 }] },
+  gemini: { a:.74, e:.06, inc:.08, om:3.6, w:.3,  type:'ringed', tilt:.47, spin:.016, moons:[{ d:3.4, n:.02, inc:.1 }] },
+};
+const DECOR = [
+  { a:.15, e:.2,  inc:.12,  om:1.1, w:.4,  col:'#b9aa9a', type:'rock',   r:.014, spin:.01 },
+  { a:.34, e:.09, inc:-.06, om:4,   w:2,   col:'#d9a06a', type:'rock',   r:.02,  spin:.015 },
+  { a:.53, e:.12, inc:.1,   om:.2,  w:1,   col:'#8fbf9f', type:'rock',   r:.022, spin:.012, moons:[{ d:2.2, n:.04, inc:.1 }] },
+  { a:.67, e:.05, inc:-.04, om:2.6, w:3,   col:'#d8b98a', type:'gas',    r:.036, spin:.02,  moons:[{ d:2.2, n:.03, inc:0 }, { d:3, n:.02, inc:.1 }], tilt:.05 },
+  { a:.88, e:.07, inc:.07,  om:5,   w:2.2, col:'#c9b27a', type:'ringed', r:.03,  spin:.016, tilt:.4 },
+  { a:.97, e:.1,  inc:-.1,  om:3.1, w:.9,  col:'#7fb7d8', type:'rock',   r:.024, spin:.011 },
+];
+const mixHex = (h, t, k) => { const a = [1,3,5].map(i => parseInt(h.slice(i, i+2), 16)), b = [1,3,5].map(i => parseInt(t.slice(i, i+2), 16)); return `rgb(${a.map((v, i) => Math.round(v + (b[i]-v)*k)).join(',')})`; };
+const rgbA = (rgb, a) => rgb.replace('rgb', 'rgba').replace(')', `,${a})`);
+function kepler(M, e) { let E = M; for (let i = 0; i < 4; i++) E = M + e*Math.sin(E); return E; }
+function orbitXYZ(o, E) { const x0 = o.a*(Math.cos(E) - o.e), y0 = o.a*Math.sqrt(1 - o.e*o.e)*Math.sin(E), cw = Math.cos(o.w), sw = Math.sin(o.w), x1 = x0*cw - y0*sw, y1 = x0*sw + y0*cw,
+  ci = Math.cos(o.inc), si = Math.sin(o.inc), y2 = y1*ci, z2 = y1*si, co = Math.cos(o.om), so = Math.sin(o.om); return [x1*co - y2*so, x1*so + y2*co, z2]; }
+function camSetup() { const az = tk*.00016 + .6, ph = 1.14 + .06*Math.sin(tk*.0007); return { ca:Math.cos(az), sa:Math.sin(az), cp:Math.cos(ph), sp:Math.sin(ph) }; }      // 카메라가 천천히 돌고 고개를 까딱임
+function project(p, cam, c, R) { const x = p[0]*cam.ca - p[1]*cam.sa, y = p[0]*cam.sa + p[1]*cam.ca, z = p[2], sy = y*cam.cp - z*cam.sp, d = y*cam.sp + z*cam.cp, s = 1/(1 - d*.34); return { x:c.x + x*R*s, y:c.y + sy*R*s, d, s }; }
+function offs(v, cam) { const x = v[0]*cam.ca - v[1]*cam.sa, y = v[0]*cam.sa + v[1]*cam.ca; return { x, y:y*cam.cp - v[2]*cam.sp, d:y*cam.sp + v[2]*cam.cp }; }
+function initSolar() {
+  const r = Math.random, mk = o => ({ ...o, M:r()*6.283, n:KEP*Math.pow(o.a, -1.5), rot:r()*6, moonTh:(o.moons || []).map(() => r()*6.283), seed:r()*10 });
+  solar = { stars:Array.from({length:220}, () => ({x:r(), y:r(), s:r()*1.4 + .3, ph:r()*6, v:r()*.00004 + .00001})),
+    belt:Array.from({length:640}, () => { const a = .575 + r()*.06; return { a, th:r()*6.283, inc:(r() - .5)*.14, om:r()*6.283, s:r()*1.3 + .4, n:KEP*Math.pow(a, -1.5) }; }),
+    sun:fib(300), flares:Array.from({length:8}, () => ({a:r()*6.283, w:(r() - .5)*.004, ph:r()*6, len:r()*.5 + .5})),
+    ai:Object.fromEntries(Object.entries(OR).map(([k, o]) => [k, mk(o)])), decor:DECOR.map(mk), slow:{ claude:1, codex:1, gemini:1 }, comet:null, nextComet:tk + 500 };
+}
+function shadedBall(x, y, r, col, sun, glow) {                                // 태양 쪽이 밝고 반대쪽이 어두운 구
+  const dx = sun.x - x, dy = sun.y - y, d = Math.hypot(dx, dy) || 1, lx = dx/d, ly = dy/d;
+  if (glow) halo(x, y, r*2.6, glow, .22);
+  const gr = g.createRadialGradient(x + lx*r*.38, y + ly*r*.38, r*.05, x, y, r*1.15); gr.addColorStop(0, mixHex(col, '#ffffff', .55)); gr.addColorStop(.5, mixHex(col, '#ffffff', 0)); gr.addColorStop(1, mixHex(col, '#000000', .85));
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+}
+function ringArc(x, y, r, col, tilt, front) {                                 // 고리: 촘촘한 여러 겹 + 틈, 뒤쪽 절반은 행성 뒤 / 앞쪽 절반은 행성 앞
+  g.save(); g.translate(x, y); g.rotate(-tilt*.8); const ratio = .26 + .06*Math.sin(tk*.0009), a0 = front ? 0 : Math.PI, a1 = front ? Math.PI : 6.283;
+  for (let i = 0; i < 16; i++) { const k = 1.42 + i*.045 + (i > 9 ? .09 : 0), tone = (Math.sin(i*2.3) + 1)/2, gap = i === 10; if (gap) continue;                  // i=10은 카시니 틈
+    g.lineWidth = Math.max(.8, r*.06); g.strokeStyle = rgbA(mixHex(col, tone > .5 ? '#ffffff' : '#7a6a58', .35 + tone*.25), (front ? .16 : .12) + tone*.3); g.beginPath(); g.ellipse(0, 0, r*k, r*k*ratio, 0, a0, a1); g.stroke(); }
+  g.restore();
+}
+function blob(cx, cy, rx, ry, seed, rot) { g.beginPath(); for (let i = 0; i <= 16; i++) { const a = i/16*6.283, f = 1 + .28*Math.sin(i*2.7 + seed) + .16*Math.sin(i*5.1 + seed*1.7);
+  const px = Math.cos(a)*rx*f, py = Math.sin(a)*ry*f, c = Math.cos(rot), s = Math.sin(rot); const X = cx + px*c - py*s, Y = cy + px*s + py*c; i ? g.lineTo(X, Y) : g.moveTo(X, Y); } g.closePath(); }
+function planetBody(x, y, r, col, type, sun, rot, glow, seed, tilt) {
+  const dx = sun.x - x, dy = sun.y - y, dd = Math.hypot(dx, dy) || 1, lx = dx/dd, ly = dy/dd, rotM = rot % 6.283;
+  if (type === 'ringed') ringArc(x, y, r, col, tilt || .4, false);
+  if (glow) halo(x, y, r*2.9, glow, .24);
+  // 구 본체: 낮 쪽은 밝게, 밤 쪽은 새까맣지 않고 은은하게 푸른빛
+  const gr = g.createRadialGradient(x + lx*r*.4, y + ly*r*.4, r*.05, x, y, r*1.18);
+  gr.addColorStop(0, mixHex(col, '#ffffff', .6)); gr.addColorStop(.45, mixHex(col, '#ffffff', .02)); gr.addColorStop(.85, mixHex(col, '#0a1020', .78)); gr.addColorStop(1, mixHex(col, '#060a18', .92));
+  g.fillStyle = gr; g.beginPath(); g.arc(x, y, r, 0, 6.283); g.fill();
+  g.save(); g.translate(x, y); g.rotate(tilt || 0); g.beginPath(); g.arc(0, 0, r, 0, 6.283); g.clip();                                     // 자전축이 기운 채로 표면이 흐름
+  if (type === 'gas') {                                                                                                                     // 가스 행성: 색조 다른 띠 + 띠마다 다른 속도로 흐르는 소용돌이 + 나선 폭풍
+    for (let i = -6; i <= 6; i++) { const yy = i*r*.16 + Math.sin(rotM*.7 + i)*r*.012, lighter = i & 1, h = r*(.1 + .04*Math.sin(i*1.7));
+      g.fillStyle = rgbA(mixHex(col, lighter ? '#ffffff' : '#241a10', .22 + .08*Math.abs(Math.sin(i*2.1))), .55); g.fillRect(-r, yy, r*2, h);
+      const sp = (1 + (i % 3)*.5)*(i % 2 ? 1 : -.8); for (let e = 0; e < 3; e++) { const ex = (((rot*sp*r*.9 + e*r*.9 + i*r*.31) % (r*2.6)) + r*2.6) % (r*2.6) - r*1.3; g.fillStyle = `rgba(255,255,255,${lighter ? .1 : .06})`; g.beginPath(); g.ellipse(ex, yy + h*.5, r*.16, r*.035, 0, 0, 6.283); g.fill(); } }
+    const sx = Math.sin(rotM)*r*.82, vis = Math.cos(rotM); if (vis > -.25) { const k = Math.min(1, vis + .3); g.save(); g.translate(sx, r*.3); g.scale(Math.max(.3, vis + .25), 1);
+      g.fillStyle = `rgba(185,70,50,${.55*k})`; g.beginPath(); g.ellipse(0, 0, r*.26, r*.14, 0, 0, 6.283); g.fill(); g.strokeStyle = `rgba(255,230,200,${.4*k})`; g.lineWidth = 1;
+      g.beginPath(); for (let t = 0; t < 14; t += .4) { const rr = t*r*.012, aa = t + rot*3; g.lineTo(Math.cos(aa)*rr*1.6, Math.sin(aa)*rr*.8); } g.stroke(); g.restore(); } }                                // 폭풍 소용돌이
+  if (type === 'ringed') { for (let i = -5; i <= 5; i++) { g.fillStyle = `rgba(255,255,255,${.04 + (i & 1 ? .04 : 0)})`; g.fillRect(-r, i*r*.18, r*2, r*.09); }
+    g.fillStyle = 'rgba(0,0,0,.3)'; g.fillRect(-r, -r*.05 - ly*r*.25, r*2, r*.12); }                                                           // 고리가 행성에 드리우는 그림자
+  if (type === 'earth') {                                                                                                                   // 지구형: 바다 + 불규칙한 대륙 + 흐르는 구름 + 극지 + 밤의 도시 불빛
+    for (let i = 0; i < 5; i++) { const cx = ((rot*r*.7 + i*r*1.15) % (r*2.9)) - r*1.45, cy = Math.sin(i*2.3 + seed)*r*.45; g.fillStyle = 'rgba(46,118,66,.78)'; blob(cx, cy, r*.46, r*.24, seed + i, i*.6); g.fill();
+      g.fillStyle = 'rgba(150,120,70,.4)'; blob(cx + r*.05, cy - r*.04, r*.26, r*.12, seed + i + 3, i*.6); g.fill(); }
+    for (let i = 0; i < 6; i++) { const cx = ((rot*r*1.15 + i*r*1.0) % (r*3)) - r*1.5, cy = Math.sin(i*1.9)*r*.6; g.fillStyle = 'rgba(255,255,255,.26)'; blob(cx, cy, r*.55, r*.09, i*2, .1); g.fill(); }
+    g.fillStyle = 'rgba(255,255,255,.4)'; g.beginPath(); g.ellipse(0, -r*.97, r*.6, r*.2, 0, 0, 6.283); g.fill(); g.beginPath(); g.ellipse(0, r*.97, r*.5, r*.16, 0, 0, 6.283); g.fill();
+    for (let i = 0; i < 26; i++) { const u = (i*2.399 + seed) % 6.283, v = Math.sin(i*1.31 + seed)*.8, px = Math.sin(u + rot)*Math.cos(v*1.2)*r*.92, py = v*r*.7, vis = Math.cos(u + rot);       // 도시 불빛(밤 쪽에서만 보임)
+      const night = Math.max(0, -( (px*Math.cos(-(tilt||0)) - py*Math.sin(-(tilt||0)))*lx + (px*Math.sin(-(tilt||0)) + py*Math.cos(-(tilt||0)))*ly )/r*1.4); if (vis > 0 && night > .1) { g.fillStyle = `rgba(255,205,110,${Math.min(.85, night*.9)})`; g.fillRect(px - .7, py - .7, 1.6, 1.6); } } }
+  if (type === 'rock') { g.fillStyle = 'rgba(0,0,0,.2)'; for (let i = 0; i < 6; i++) { g.beginPath(); g.arc(((rot*r*.5 + i*r*.8) % (r*2.4)) - r*1.2, Math.sin(i*1.7 + seed)*r*.5, r*(.1 + .08*Math.abs(Math.sin(i + seed))), 0, 6.283); g.fill(); } }
+  g.restore();
+  if (type === 'earth') { const gx = x + lx*r*.42 - ly*r*.12, gy = y + ly*r*.42 + lx*r*.12; halo(gx, gy, r*.5, '#ffffff', .42); }                      // 바다에 비친 햇빛 반짝임
+  // 대기: 가장자리가 은은하게 빛나고 태양 쪽이 더 밝음
+  g.save(); g.globalCompositeOperation = 'lighter'; const a0 = Math.atan2(dy, dx);
+  const rim = g.createRadialGradient(x, y, r*.9, x, y, r*1.2); rim.addColorStop(0, rgbA(mixHex(col, '#ffffff', .4), 0)); rim.addColorStop(.5, rgbA(mixHex(col, '#ffffff', .5), type === 'earth' ? .34 : .2)); rim.addColorStop(1, rgbA(mixHex(col, '#ffffff', .5), 0));
+  g.fillStyle = rim; g.beginPath(); g.arc(x, y, r*1.2, 0, 6.283); g.fill();
+  g.strokeStyle = rgbA(mixHex(col, '#ffffff', .65), .5); g.lineWidth = 1.4; g.beginPath(); g.arc(x, y, r*.985, a0 - 1.05, a0 + 1.05); g.stroke(); g.restore();
+  if (type === 'ringed') ringArc(x, y, r, col, tilt || .4, true);
+}
+function drawMoons(pl, x, y, pr, cam, sun, frontPass) {                       // 달: 행성마다 기울어진 궤도로 돎(앞/뒤 구분)
+  (pl.moons || []).forEach((m, i) => { const th = pl.moonTh[i], v = [Math.cos(th)*m.d*pr, Math.sin(th)*Math.cos(m.inc)*m.d*pr, Math.sin(th)*Math.sin(m.inc)*m.d*pr], o = offs(v, cam);
+    if ((o.d >= 0) === frontPass) shadedBall(x + o.x, y + o.y, pr*(.2 + .06*i + .04*(o.d/(m.d*pr + 1e-6))), '#cfcfcf', sun); });
+}
+function drawSolar() {
+  if (!solar) initSolar();
+  const cam = camSetup(), R = Math.min((W*.5 - 64)/1.12, H*.7), base = { x:W*.5, y:H*.47 }, busy = KEYS.some(k => state[k] === 'running');
+  const sun = { x:base.x + Math.sin(tk*.0021)*3, y:base.y + Math.cos(tk*.0017)*2 };                      // 행성들의 중력으로 태양이 살짝 흔들림
+  g.globalCompositeOperation = 'source-over'; g.textAlign = 'center';
+  halo(W*.2, H*.3, W*.4, '#6a4cff', .06); halo(W*.85, H*.75, W*.35, '#2a9dff', .05);
+  solar.stars.forEach(s => { s.y -= s.v*.4; if (s.y < 0) s.y = 1; dot(s.x*W, s.y*H, s.s, '#cfe2ff', .18 + .4*Math.abs(Math.sin(tk*.012 + s.ph))); });
+  // 궤도선(3D로 투영한 타원 — 뒤쪽은 흐리게, 앞쪽은 또렷하게)
+  const orbitLine = (o, col, a1, a2) => { let prev = null; g.lineWidth = 1; for (let i = 0; i <= 110; i++) { const p = project(orbitXYZ(o, i/110*6.283), cam, base, R);
+    if (prev) { g.strokeStyle = rgba(col, p.d > 0 ? a2 : a1); g.beginPath(); g.moveTo(prev.x, prev.y); g.lineTo(p.x, p.y); g.stroke(); } prev = p; } };
+  KEYS.forEach(k => orbitLine(solar.ai[k], N[k].color, state[k] === 'running' ? .22 : .08, state[k] === 'running' ? .5 : .2));
+  solar.decor.forEach(d => orbitLine(d, '#96b4e6', .04, .1));
+  const items = [{ d:0, kind:'sun' }];
+  KEYS.forEach(k => { const o = solar.ai[k], run = state[k] === 'running', tgt = hoverK === k ? .06 : 1; solar.slow[k] += (tgt - solar.slow[k])*.12;
+    o.M += o.n*(run ? 1.8 : 1)*solar.slow[k]*(1 + o.e*Math.cos(o.M)*1.2); o.rot += o.spin*solar.slow[k]; o.moonTh = o.moonTh.map((t, i) => t + o.moons[i].n*solar.slow[k]);     // 태양에 가까울수록 빨라짐
+    const p = project(orbitXYZ(o, kepler(o.M, o.e)), cam, base, R); items.push({ d:p.d, kind:'ai', k, p, o }); orbs[k].x = p.x; orbs[k].y = p.y; });
+  solar.decor.forEach(o => { o.M += o.n*(1 + o.e*Math.cos(o.M)*1.2); o.rot += o.spin; o.moonTh = o.moonTh.map((t, i) => t + o.moons[i].n); const p = project(orbitXYZ(o, kepler(o.M, o.e)), cam, base, R); items.push({ d:p.d, kind:'decor', p, o }); });
+  // 소행성대(기울어진 3D 고리)
+  solar.belt.forEach(b => { b.th += b.n; const x = Math.cos(b.th)*b.a, y = Math.sin(b.th)*b.a, ci = Math.cos(b.inc), si = Math.sin(b.inc), y2 = y*ci, z = y*si, co = Math.cos(b.om), so = Math.sin(b.om),
+    p = project([x*co - y2*so, x*so + y2*co, z], cam, base, R); dot(p.x, p.y, b.s*p.s, '#b9b2a4', .28 + p.d*.12); });
+  // 혜성(태양 반대쪽으로 꼬리)
+  if (!solar.comet && tk > solar.nextComet) { const L = Math.random() < .5; solar.comet = { x:L ? -30 : W + 30, y:Math.random()*H*.5 + H*.05, vx:(L ? 1 : -1)*(1.6 + Math.random()), vy:.5 + Math.random()*.6 }; }
+  const cm = solar.comet; if (cm) { cm.x += cm.vx; cm.y += cm.vy; const dx = cm.x - sun.x, dy = cm.y - sun.y, dd = Math.hypot(dx, dy) || 1;
+    for (let i = 0; i < 60; i++) { const t = i/60; dot(cm.x + dx/dd*i*2.4 + Math.sin(i*.4)*t*5, cm.y + dy/dd*i*2.4, 2.6*(1 - t) + .4, '#bfe8ff', .55*(1 - t)); } halo(cm.x, cm.y, 14, '#dff4ff', .5); dot(cm.x, cm.y, 3, '#ffffff', .95);
+    if (cm.x < -100 || cm.x > W + 100 || cm.y > H + 60 || cm.y < -80) { solar.comet = null; solar.nextComet = tk + 900 + Math.random()*1200; } }
+  items.sort((a, b) => a.d - b.d);                                                                       // 멀리 있는 것부터 그려서 앞뒤로 가려짐
+  items.forEach(it => {
+    if (it.kind === 'sun') return drawSun(sun, R, busy);
+    if (it.kind === 'decor') { const o = it.o, r = R*o.r*it.p.s; drawMoons(o, it.p.x, it.p.y, r, cam, sun, false); planetBody(it.p.x, it.p.y, r, o.col, o.type, sun, o.rot, null, o.seed, o.tilt); drawMoons(o, it.p.x, it.p.y, r, cam, sun, true); return; }
+    const k = it.k, o = it.o, col = nodeColor(k), run = state[k] === 'running', pr = orbs[k].r*.7*it.p.s; orbs[k].pr = pr;
+    const step = .09/Math.max(.6, 1); for (let i = 1; i <= 30; i++) { const pp = project(orbitXYZ(o, kepler(o.M - i*step*(o.n/.0066), o.e)), cam, base, R); dot(pp.x, pp.y, 2.6*(1 - i/32)*pp.s + .4, col, .42*(1 - i/30)); }     // 지나온 궤적
+    drawMoons(o, it.p.x, it.p.y, pr, cam, sun, false); planetBody(it.p.x, it.p.y, pr, col, o.type, sun, o.rot, col, k.length, o.tilt); drawMoons(o, it.p.x, it.p.y, pr, cam, sun, true);
+    if (run) { g.strokeStyle = rgba(col, .55 + .3*Math.sin(tk/6)); g.lineWidth = 1.5; g.beginPath(); g.arc(it.p.x, it.p.y, pr*(1.5 + .12*Math.sin(tk/5)), 0, 6.283); g.stroke(); }
+  });
+  if (tk % 2 === 0) KEYS.forEach(k => { if (state[k] === 'running') flows.push({k, t:0, sp:.012 + Math.random()*.01, off:(Math.random() - .5)*10}); });
+  flows = flows.filter(f => f.t < 1); g.globalCompositeOperation = 'lighter';
+  flows.forEach(f => { f.t += f.sp; const o = orbs[f.k]; dot(sun.x + (o.x - sun.x)*f.t + f.off*Math.sin(f.t*3.14), sun.y + (o.y - sun.y)*f.t, 2.2, nodeColor(f.k), Math.sin(f.t*3.14)*.95); });
+  g.globalCompositeOperation = 'source-over';
+  moveBrands();
+  const lab = {}; KEYS.forEach(k => lab[k] = orbs[k].y + (orbs[k].pr || orbs[k].r*.7)*1.25 + 22);        // 라벨끼리 겹치면 아래쪽 것을 밀어 내림
+  for (let pass = 0; pass < 2; pass++) KEYS.forEach(a => KEYS.forEach(b => { if (a < b && Math.abs(orbs[a].x - orbs[b].x) < 125 && Math.abs(lab[a] - lab[b]) < 84) { const lower = lab[a] > lab[b] ? a : b, upper = lower === a ? b : a; lab[lower] = lab[upper] + 84; } }));
+  KEYS.forEach(k => { const o = orbs[k], run = state[k] === 'running', col = nodeColor(k), y = lab[k], st = {idle:'대기',running:'작업 중',done:'완료',failed:'실패',limit:'한도 소진'}[state[k]];
+    g.fillStyle = rgba(col, .95); g.font = '600 10px Pretendard, sans-serif'; g.fillText(N[k].tag, o.x, y);
+    g.fillStyle = '#eef3ff'; g.font = '700 19px Pretendard, sans-serif'; g.fillText(N[k].name, o.x, y + 21);
+    g.fillStyle = state[k]==='failed' ? RED : state[k]==='limit' ? AMBER : run ? col : '#93a3c0'; g.font = '12px Pretendard, sans-serif'; g.fillText(st, o.x, y + 39);
+    const mn = modelName(k); g.fillStyle = '#b4c3de'; g.font = '600 11px Pretendard, sans-serif'; g.fillText(mn, o.x, y + 55);
+    if (canChange(k)) { const w = g.measureText(mn).width, tx = o.x + w/2 + 9, ty = y + 51; g.fillStyle = col; g.beginPath(); g.moveTo(tx-3.5, ty-2); g.lineTo(tx+3.5, ty-2); g.lineTo(tx, ty+3); g.closePath(); g.fill(); }
+    const today = todayCalls(k); g.fillStyle = '#6b7da0'; g.font = '11px Pretendard, sans-serif';
+    g.fillText(k==='claude' ? (claudeInfo.ok ? '세션 토큰 ' + fmtTok(claudeInfo.tokens) : '연결 없음') : (today ? `오늘 ${today}회 · ${tokSum(k,'today') ? fmtTok(tokSum(k,'today')) + ' 토큰' : '토큰 -'}` : '오늘 호출 없음'), o.x, y + 71); });
+}
+function drawSun(c, R, busy) {                                                // 태양: 코로나, 자전하는 표면 입자, 일렁이는 홍염
+  const r = R*.115*(1 + (busy ? .05*Math.sin(tk/7) : .02*Math.sin(tk/30)));
+  halo(c.x, c.y, r*5.2, '#ff9a2a', busy ? .22 : .14); halo(c.x, c.y, r*2.6, '#ffd36a', .3);
+  g.save(); g.globalCompositeOperation = 'lighter';
+  for (let i = 0; i < 28; i++) { const a = i/28*6.283 + tk*.0016, len = 1.5 + .5*Math.sin(tk*.02 + i*1.7); g.strokeStyle = 'rgba(255,200,110,.10)'; g.lineWidth = 1.2; g.beginPath(); g.moveTo(c.x + Math.cos(a)*r*1.05, c.y + Math.sin(a)*r*1.05); g.lineTo(c.x + Math.cos(a)*r*(len + .2), c.y + Math.sin(a)*r*(len + .2)); g.stroke(); }
+  solar.flares.forEach(f => { f.a += f.w; const h = r*(.35 + .25*Math.sin(tk*.025 + f.ph))*f.len, a0 = f.a, a1 = f.a + .28; g.strokeStyle = 'rgba(255,150,60,.55)'; g.lineWidth = 2.2; g.beginPath();
+    g.moveTo(c.x + Math.cos(a0)*r, c.y + Math.sin(a0)*r); g.quadraticCurveTo(c.x + Math.cos((a0 + a1)/2)*(r + h*2), c.y + Math.sin((a0 + a1)/2)*(r + h*2), c.x + Math.cos(a1)*r, c.y + Math.sin(a1)*r); g.stroke(); });
+  g.restore();
+  g.save(); g.globalCompositeOperation = 'lighter';                                                                                       // 렌즈 플레어: 가로·대각으로 길게 뻗는 빛줄기
+  for (const [ang, len, al] of [[0, 7, .22], [.78, 4.5, .12], [-.78, 4.5, .12]]) { g.save(); g.translate(c.x, c.y); g.rotate(ang + Math.sin(tk*.002)*.03); const lg = g.createLinearGradient(-r*len, 0, r*len, 0);
+    lg.addColorStop(0, 'rgba(255,190,100,0)'); lg.addColorStop(.5, `rgba(255,225,160,${al*(busy ? 1.5 : 1)})`); lg.addColorStop(1, 'rgba(255,190,100,0)'); g.fillStyle = lg; g.fillRect(-r*len, -1.2, r*len*2, 2.4); g.restore(); }
+  g.restore();
+  const gr = g.createRadialGradient(c.x - r*.25, c.y - r*.25, r*.1, c.x, c.y, r); gr.addColorStop(0, '#fffbe6'); gr.addColorStop(.45, '#ffd25a'); gr.addColorStop(1, '#ff8a1e'); g.fillStyle = gr; g.beginPath(); g.arc(c.x, c.y, r, 0, 6.283); g.fill();
+  const rot = tk*.004, cr = Math.cos(rot), sr = Math.sin(rot);
+  solar.sun.forEach(p => { const x = p[0]*cr + p[2]*sr, z = -p[0]*sr + p[2]*cr; if (z < 0) return; dot(c.x + x*r*.96, c.y + p[1]*r*.96, 1.4, '#b85a00', .3); });
+}
+
+function drawOcean() {
+  if (!ocean) initOcean();
+  if (!ocean.amb) initAmbient();
+  stepOcean(); moveBrands(); stepAmbient();
+  const c = core(), busy = KEYS.some(k => state[k] === 'running'), sp = busy ? 2.4 : 1;
+  g.globalCompositeOperation = 'source-over'; g.textAlign = 'center';
+  // 아주 옅은 빛줄기(심해라 은은하게)
+  for (let i = 0; i < 5; i++) { const bx = W*(.12 + i*.2) + Math.sin(tk*.003 + i)*50, w = 50 + ((i*41) % 60);
+    const gr = g.createLinearGradient(bx, 0, bx + 120, H*.85); gr.addColorStop(0, 'rgba(120,210,230,.07)'); gr.addColorStop(1, 'rgba(120,210,230,0)');
+    g.fillStyle = gr; g.beginPath(); g.moveTo(bx, 0); g.lineTo(bx + w, 0); g.lineTo(bx + w + 200, H*.9); g.lineTo(bx + 80, H*.9); g.closePath(); g.fill(); }
+  // 해양설(떠다니는 입자)
+  ocean.snow.forEach(p => { p.y += p.v; p.x += Math.sin(tk*.008 + p.ph)*.00025; if (p.y > 1) { p.y = 0; p.x = Math.random(); }
+    dot(p.x*W, p.y*H, p.s, '#bff3ee', .1 + .2*Math.abs(Math.sin(tk*.02 + p.ph))); });
+  drawAmbient();                                           // 지나가는 바다 생물들(주인공보다 흐리게, 뒤쪽에)
+  // 해류선: 코어 → 노드
+  KEYS.forEach(k => { const o = orbs[k], run = state[k] === 'running'; g.strokeStyle = rgba(N[k].color, run ? .38 : .1); g.lineWidth = 1; g.setLineDash([2, 8]); g.beginPath(); g.moveTo(c.x, c.y); g.quadraticCurveTo((c.x + o.x)/2 + 26, (c.y + o.y)/2 - 26, o.x, o.y); g.stroke(); g.setLineDash([]); });
+  // 코어: 세 색 해류 고리 + 중심의 빛
+  g.globalCompositeOperation = 'lighter';
+  ocean.rings.forEach(rg => { const cs = Math.cos(rg.tilt), sn = Math.sin(rg.tilt);
+    rg.pts.forEach(p => { p.a += .0032*sp*(1 + p.w); const rx = c.r*(1 + p.w), ry = c.r*.42*(1 + p.h), x0 = Math.cos(p.a)*rx, y0 = Math.sin(p.a)*ry;
+      dot(c.x + x0*cs - y0*sn, c.y + x0*sn + y0*cs, p.s, rg.c, .2 + (Math.sin(p.a) + 1)/2*.5); }); });
+  for (let i = 0; i < 3; i++) { const ph = (tk*.005*sp + i/3) % 1; g.strokeStyle = `rgba(160,240,235,${(1 - ph)*.18})`; g.lineWidth = 1; g.beginPath(); g.arc(c.x, c.y, c.r*.25 + ph*c.r*1.5, 0, 6.283); g.stroke(); }
+  halo(c.x, c.y, c.r*.55*(1 + (busy ? .12*Math.sin(tk/6) : 0)), '#ffffff', busy ? .95 : .75);
+  // 작업 중 흐르는 빛 알갱이
+  if (tk % 2 === 0) KEYS.forEach(k => { if (state[k] === 'running') flows.push({k, t:0, back:false, sp:.005 + Math.random()*.006, off:(Math.random() - .5)*26}); else if (state[k]==='done' && k!=='claude' && Math.random()<.2) flows.push({k, t:0, back:true, sp:.008 + Math.random()*.005, off:(Math.random() - .5)*18}); });
+  flows = flows.filter(f => f.t < 1);
+  flows.forEach(f => { f.t += f.sp; const o = orbs[f.k], t = f.back ? 1 - f.t : f.t, mx = (c.x + o.x)/2 + 26, my = (c.y + o.y)/2 - 26;
+    const x = (1-t)*(1-t)*c.x + 2*(1-t)*t*mx + t*t*o.x + Math.sin(t*10)*f.off*.25, y = (1-t)*(1-t)*c.y + 2*(1-t)*t*my + t*t*o.y; dot(x, y, 2.2, nodeColor(f.k), Math.sin(f.t*Math.PI)*.95); });
+  // 생물
+  drawJellyP('codex', nodeColor('codex'), state.codex === 'running');
+  drawMantaP('gemini', nodeColor('gemini'), state.gemini === 'running');
+  drawFishP('claude', nodeColor('claude'), state.claude === 'running');
+  g.globalCompositeOperation = 'source-over';
+  // 라벨
+  KEYS.forEach(k => { const o = orbs[k], run = state[k] === 'running', col = nodeColor(k), y = o.y + o.r*1.95;
+    const st = {idle:'대기',running:'작업 중',done:'완료',failed:'실패',limit:'한도 소진'}[state[k]];
+    g.fillStyle = rgba(col, .9); g.font = '600 10px Pretendard, sans-serif'; g.fillText(N[k].tag, o.x, y);
+    g.fillStyle = '#e0f5f5'; g.font = '700 19px Pretendard, sans-serif'; g.fillText(N[k].name, o.x, y + 22);
+    g.fillStyle = state[k]==='failed' ? RED : state[k]==='limit' ? AMBER : run ? col : '#86aeb8'; g.font = '12px Pretendard, sans-serif'; g.fillText(st, o.x, y + 40);
+    const mn = modelName(k); g.fillStyle = '#a9cdd5'; g.font = '600 11px Pretendard, sans-serif'; g.fillText(mn, o.x, y + 57);
+    if (canChange(k)) { const w = g.measureText(mn).width, tx = o.x + w/2 + 9, ty = y + 53; g.fillStyle = col; g.beginPath(); g.moveTo(tx-3.5, ty-2); g.lineTo(tx+3.5, ty-2); g.lineTo(tx, ty+3); g.closePath(); g.fill(); }
+    const today = todayCalls(k); g.fillStyle = '#5f8591'; g.font = '11px Pretendard, sans-serif';
+    g.fillText(k==='claude' ? (claudeInfo.ok ? '세션 토큰 ' + fmtTok(claudeInfo.tokens) : '연결 없음') : (today ? `오늘 ${today}회 · ${tokSum(k,'today') ? fmtTok(tokSum(k,'today')) + ' 토큰' : '토큰 -'}` : '오늘 호출 없음'), o.x, y + 73); });
+}
+
+function frame() {
+  tk++; g.clearRect(0,0,W,H); g.globalCompositeOperation = 'source-over';
+  if (theme === 'solar') { drawSolar(); requestAnimationFrame(frame); return; }
+  if (theme !== 'ocean') KEYS.forEach(k => { const o = orbs[k]; if (o.hx !== undefined && (o.x !== o.hx || o.y !== o.hy)) { o.x = o.hx; o.y = o.hy; placeBrands(); } });
+  if (theme === 'mission' || theme === 'light' || theme === 'retro') { drawMission(); requestAnimationFrame(frame); return; }
+  if (theme === 'ocean') { drawOcean(); requestAnimationFrame(frame); return; }
+  stars.forEach(s => { g.fillStyle = `rgba(150,180,220,${.06+.06*Math.sin(tk/70+s[3])})`; g.fillRect(s[0],s[1],s[2],s[2]); });
+  const busy = KEYS.some(k => state[k]==='running'), c = core();
+  g.strokeStyle = 'rgba(120,150,190,.10)'; g.lineWidth = 1; [2.2, 3.3].forEach(m => { g.beginPath(); g.arc(c.x,c.y,c.r*m,0,6.283); g.stroke(); });
+  KEYS.forEach(k => { const o = orbs[k]; g.strokeStyle = rgba(N[k].color, state[k]==='running' ? .5 : .15); g.setLineDash([3,5]); g.beginPath(); g.moveTo(c.x,c.y); g.lineTo(o.x,o.y); g.stroke(); g.setLineDash([]); });
+  g.globalCompositeOperation = 'lighter';
+  const speed = busy ? 2.8 : 1;
+  rings.forEach(rg => { const cs=Math.cos(rg.tilt), sn=Math.sin(rg.tilt);
+    rg.pts.forEach(p => { p.a += 0.004*speed*(1+p.w); const rx=c.r*(1+p.w), ry=c.r*0.42*(1+p.h), x0=Math.cos(p.a)*rx, y0=Math.sin(p.a)*ry;
+      g.fillStyle = rgba(rg.c, .25 + (Math.sin(p.a)+1)/2*.55); g.fillRect(c.x + x0*cs - y0*sn, c.y + x0*sn + y0*cs, p.s, p.s); }); });
+  const cg = g.createRadialGradient(c.x,c.y,0,c.x,c.y,c.r*.45); cg.addColorStop(0,`rgba(255,255,255,${busy?1:.85})`); cg.addColorStop(.35,'rgba(255,255,255,.35)'); cg.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle = cg; g.beginPath(); g.arc(c.x,c.y,c.r*.45*(1+(busy?.12*Math.sin(tk/6):0)),0,6.283); g.fill();
+  // 노드 입자 구
+  KEYS.forEach(k => { const o = orbs[k], col = nodeColor(k), run = state[k]==='running';
+    o.rot += run ? 0.03 : 0.006; const cr=Math.cos(o.rot), sr=Math.sin(o.rot);
+    const halo = g.createRadialGradient(o.x,o.y,o.r*.3,o.x,o.y,o.r*2.5); halo.addColorStop(0,rgba(col,run?.32:.12)); halo.addColorStop(1,rgba(col,0));
+    g.fillStyle = halo; g.beginPath(); g.arc(o.x,o.y,o.r*2.5,0,6.283); g.fill();
+    const R = o.r*(run ? 1+.05*Math.sin(tk/7) : 1);
+    o.pts.forEach(p => { const x=p[0]*cr+p[2]*sr, z=-p[0]*sr+p[2]*cr, a=(z+1)/2; g.fillStyle = rgba(col,(run?.35:.22)+a*.55); const s=.9+a*1.5; g.fillRect(o.x+x*R, o.y+p[1]*R, s, s); });
+    g.strokeStyle = rgba(col, run?.9:.5); g.setLineDash([2,4]); g.beginPath(); g.arc(o.x,o.y,o.r*1.3,tk/(run?25:90),tk/(run?25:90)+6.283); g.stroke(); g.setLineDash([]); });
+  // 흐르는 입자 (코어 ↔ 노드)
+  if (tk % 2 === 0) KEYS.forEach(k => { const st = state[k];
+    if (k !== 'claude' && st==='running') flows.push({k,t:0,back:false,sp:.006+Math.random()*.008,off:(Math.random()-.5)*34});
+    else if (k !== 'claude' && st==='done' && Math.random()<.25) flows.push({k,t:0,back:true,sp:.008+Math.random()*.006,off:(Math.random()-.5)*22});
+    else if (k === 'claude' && st==='running' && Math.random()<.5) flows.push({k,t:0,back:false,sp:.005+Math.random()*.006,off:(Math.random()-.5)*34}); });
+  flows = flows.filter(f => f.t < 1);
+  flows.forEach(f => { f.t += f.sp; const o=orbs[f.k], t=f.back?1-f.t:f.t, x=c.x+(o.x-c.x)*t, y=c.y+(o.y-c.y)*t+Math.sin(t*Math.PI)*f.off;
+    g.fillStyle = rgba(N[f.k].color, Math.sin(f.t*Math.PI)*.95); g.beginPath(); g.arc(x,y,1.7,0,6.283); g.fill(); });
+  // 노드 라벨
+  g.globalCompositeOperation = 'source-over'; g.textAlign = 'center';
+  KEYS.forEach(k => { const o = orbs[k], st = {idle:'대기',running:'작업 중',done:'완료',failed:'실패',limit:'한도 소진'}[state[k]], today = todayCalls(k);
+    const x = o.x, y = o.y + o.r*1.75;
+    g.fillStyle = N[k].color; g.font = '700 9.5px Pretendard, sans-serif'; g.fillText(N[k].tag, x, y);
+    g.fillStyle = '#e8eef7'; g.font = '800 19px Pretendard, sans-serif'; g.fillText(N[k].name, x, y+22);
+    g.fillStyle = state[k]==='failed' ? RED : state[k]==='limit' ? AMBER : state[k]==='running' ? N[k].color : '#7f90a8'; g.font = '12px Pretendard, sans-serif'; g.fillText(st, x, y+40);
+    g.fillStyle = '#9fb0c8'; g.font = '600 11px Pretendard, sans-serif'; const mn = modelName(k); g.fillText(mn, x, y+57); if (canChange(k)) { const w = g.measureText(mn).width, tx = x + w/2 + 9, ty = y+53; g.fillStyle = N[k].color; g.beginPath(); g.moveTo(tx-3.5, ty-2); g.lineTo(tx+3.5, ty-2); g.lineTo(tx, ty+3); g.closePath(); g.fill(); g.fillStyle = '#56667d'; }
+    g.fillStyle = '#56667d'; g.font = '11px Pretendard, sans-serif';
+    const tt = k==='claude' ? (claudeInfo.ok ? '세션 토큰 ' + fmtTok(claudeInfo.tokens) : '연결 없음') : (today ? `오늘 ${today}회 · ${tokSum(k,'today')?fmtTok(tokSum(k,'today'))+' 토큰':'토큰 -'}` : '오늘 호출 없음');
+    g.fillText(tt, x, y+73); });
+  requestAnimationFrame(frame);
+}
+addEventListener('resize', layout);
+
+/* ===== 가운데 HTML 요소 ===== */
+function placeBrands() {
+  $('brands').innerHTML = KEYS.map(k => { const n = N[k], o = orbs[k]; const [,dx,dy] = n.card;
+    return `<div class="brand" data-k="${k}" style="--cc:${n.color};left:${o.x + dx*W}px;top:${o.y + dy*H - 26}px"><small>${n.brand}</small><b>${n.name.toUpperCase()}</b></div>`; }).join('');
+}
+$('stages').innerHTML = CONFIG.stages.map((s,i) => `<div class="sc" id="sc${i}" style="--cc:${s.color}"><small>${s.tag}</small><b>${s.ko}</b></div>`).join('');
+function renderStages() {
+  const showing = stage >= 0;
+  $('stages').classList.toggle('on', !!showing);
+  CONFIG.stages.forEach((s,i) => $('sc'+i).classList.toggle('on', i === stage));
+}
+function renderPipe() {
+  $('pipe').innerHTML = CONFIG.pipeline.map(([ko,en],i) => `<div class="s ${i<stage?'done':(i===stage?'on':'')}"><i></i><div>${ko}<small>${en}</small></div></div>` + (i<CONFIG.pipeline.length-1?'<div class="bar"></div>':'')).join('');
+  renderStages();
+}
+
+/* ===== 계산 도우미 ===== */
+const fmtLeft = iso => { const ms = Date.parse(iso) - Date.now(); if (!(ms > 0)) return '곧'; const m = Math.floor(ms/60000), d = Math.floor(m/1440), hh = Math.floor((m % 1440)/60), mm = m % 60; return d ? `${d}일 ${hh}시간` : (hh ? `${hh}시간 ${mm}분` : `${mm}분`); };
+const limRow = (lab, used, rst) => { if (used == null) return ''; const left = 100 - used, col = left < 15 ? '#ff5c6c' : left < 35 ? '#f5b942' : 'var(--green)';
+  return `<div class="lim"><span>${lab}</span><b style="color:${col}">남은 ${left}%</b></div><div class="meter"><i style="width:${used}%;background:${col}"></i></div><div class="limsub">${rst ? fmtLeft(rst) + ' 뒤 초기화' : ''}</div>`; };
+/* Codex 한도 소진 시각: 마지막 Codex 호출이 "사용 한도" 응답이면 그 안의 "Nov 11th, 2026 2:07 AM" 같은 시각을 읽어 보여 줌 */
+const MON = { Jan:0, Feb:1, Mar:2, Apr:3, May:4, Jun:5, Jul:6, Aug:7, Sep:8, Oct:9, Nov:10, Dec:11 };
+function parseResetText(text) {
+  const m = /([A-Z][a-z]{2})[a-z]* (\d{1,2})(?:st|nd|rd|th)?, (\d{4}) (\d{1,2}):(\d{2}) (AM|PM)/.exec(text || ''); if (!m || !(m[1] in MON)) return null;
+  let hr = Number(m[4]) % 12; if (m[6] === 'PM') hr += 12; return new Date(Number(m[3]), MON[m[1]], Number(m[2]), hr, Number(m[5]));
+}
+function codexLimitHtml() {
+  const last = history.find(h => h.who.codex), w = last && last.who.codex; if (!w || w.reason !== 'limit') return '';
+  const at = parseResetText(w.output); if (!at) return `<div class="lim"><span>사용 한도</span><b style="color:#f5b942">소진</b></div><div class="limsub">풀리는 시각을 알 수 없어요</div>`;
+  const ms = at.getTime() - Date.now(), ap = at.getHours() < 12 ? '오전' : '오후', h12 = at.getHours() % 12 || 12, when = `${at.getMonth() + 1}월 ${at.getDate()}일 ${ap} ${h12}:${String(at.getMinutes()).padStart(2, '0')}`;
+  return ms > 0 ? `<div class="lim"><span>사용 한도</span><b style="color:#f5b942">소진</b></div><div class="limsub">${when}에 풀림 · ${fmtLeft(at.toISOString())} 뒤</div>`
+    : `<div class="lim"><span>사용 한도</span><b style="color:var(--green)">풀렸을 수 있음</b></div><div class="limsub">${when}에 풀리는 것으로 안내됐어요. 다시 호출해 보세요</div>`;
+}
+function geminiLimitHtml() {                                                    // Gemini 429: 서버가 응답에서 읽어 저장한 reset_at(다시 시도 가능한 시각)을 표시
+  const last = history.find(h => h.who.gemini), w = last && last.who.gemini; if (!w || w.reason !== 'limit') return '';
+  if (!w.reset_at) return `<div class="lim"><span>요청 한도</span><b style="color:#f5b942">초과</b></div><div class="limsub">잠시 후 다시 시도할 수 있어요</div>`;
+  const at = new Date(w.reset_at), ms = at.getTime() - Date.now(), ap = at.getHours() < 12 ? '오전' : '오후', h12 = at.getHours() % 12 || 12, p2 = n => String(n).padStart(2, '0');
+  const when = `${ap} ${h12}:${p2(at.getMinutes())}:${p2(at.getSeconds())}`, left = ms < 60000 ? Math.max(1, Math.ceil(ms/1000)) + '초' : fmtLeft(at.toISOString());
+  return ms > 0 ? `<div class="lim"><span>요청 한도</span><b style="color:#f5b942">초과</b></div><div class="limsub">${when}에 다시 시도 가능 · ${left} 뒤</div>`
+    : `<div class="lim"><span>요청 한도</span><b style="color:var(--green)">풀렸을 수 있음</b></div><div class="limsub">${when}부터 다시 시도할 수 있어요</div>`;
+}
+const fmtTok = n => n >= 10000 ? (n/10000).toFixed(1)+'만' : Number(n).toLocaleString();
+const fmtSec = s => s >= 60 ? Math.floor(s/60)+'분 '+Math.round(s%60)+'초' : (Math.round(s*10)/10)+'초';
+const mmss = s => { s=Math.max(0,Math.floor(s)); return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0'); };
+const pad = n => String(n).padStart(2,'0');
+function ago(str) { const t = new Date(str.replace(' ','T')).getTime(); const d = (Date.now()-t)/1000; return d<60?'방금':d<3600?Math.floor(d/60)+'분 전':d<86400?Math.floor(d/3600)+'시간 전':Math.floor(d/86400)+'일 전'; }
+const dayStr = d => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+let models = {};
+const modelName = k => (models[k] && models[k].current) ? models[k].current : '모델 확인 중';
+const canChange = k => !!(models[k] && models[k].changeable);
+function tokSum(k, scope) {
+  const t = dayStr(new Date());
+  return history.filter(h => scope==='all' || h.started.startsWith(t)).reduce((a,h) => a + ((h.who[k] && h.who[k].tokens) || 0), 0);
+}
+function todayCalls(k) { const t = dayStr(new Date()); return history.filter(h => h.started.startsWith(t) && h.who[k]).length; }
+function subset() { return tab==='mission' ? history.slice(0,1) : tab==='today' ? history.filter(h => h.started.startsWith(dayStr(new Date()))) : history; }
+const runFailed = r => Object.values(r.who).some(w => w.status==='failed');
+const runLimit = r => Object.values(r.who).some(w => w.reason==='limit');
+
+/* ===== 오른쪽: 작업량 / 최근 호출 / 연결 ===== */
+function renderRight() {
+  const runs = subset(), rows = {}; CONFIG.reviewers.forEach(k => rows[k] = {calls:0,fail:0,sec:0,tok:0,tokKnown:false});
+  runs.forEach(h => Object.entries(h.who).forEach(([k,w]) => { const r = rows[k]; if (!r) return; r.calls++; if (w.status==='failed') r.fail++; r.sec += w.sec||0; if (w.tokens) { r.tok += w.tokens; r.tokKnown = true; } }));
+  const calls = Object.values(rows).reduce((a,r)=>a+r.calls,0), fails = Object.values(rows).reduce((a,r)=>a+r.fail,0), secs = Object.values(rows).reduce((a,r)=>a+r.sec,0);
+  $('total').textContent = calls; $('sumline').textContent = `호출 ${calls}회 · 소요 ${fmtSec(secs)} · 실패 ${fails}`;
+  $('stack').innerHTML = CONFIG.reviewers.map(k => `<i style="width:${calls?rows[k].calls/calls*100:0}%;background:${N[k].color}"></i>`).join('');
+  const maxc = Math.max(1, ...Object.values(rows).map(r=>r.calls));
+  const roleCard = (k, body) => `<div class="role" data-ai="${k}" style="--c:${N[k].color}"><div class="r"><span>${N[k].tag}</span><b style="color:${N[k].color}">${N[k].name}</b></div><div class="mdl">${esc(modelName(k))}${canChange(k)?' · 눌러서 모델 변경':''}</div>${body}</div>`;
+  const claudeCard = roleCard('claude', `<div class="nums"><div>${claudeInfo.ok?claudeInfo.percent+'%':'-'}<small>컨텍스트</small></div><div>${claudeInfo.ok?fmtTok(claudeInfo.tokens):'-'}<small>세션 토큰</small></div><div>${claudeInfo.ok&&claudeInfo.usd!=null?('$'+claudeInfo.usd.toFixed(1)):'-'}<small>세션 비용</small></div></div><div class="meter"><i style="width:${claudeInfo.ok?claudeInfo.percent:0}%"></i></div>${claudeInfo.ok ? limRow('일일 한도 (5시간)', claudeInfo.five_hour, claudeInfo.reset_five_hour) + limRow('주간 한도 (7일)', claudeInfo.seven_day, claudeInfo.reset_seven_day) + (claudeInfo.five_hour == null && claudeInfo.tokens_5h != null ? `<div class="limsub">5시간 ${fmtTok(claudeInfo.tokens_5h)} · 7일 ${fmtTok(claudeInfo.tokens_7d)} 토큰 사용 (한도 %는 이 PC에서 알 수 없어요)</div>` : '') : ''}`);
+  $('roles').innerHTML = claudeCard + CONFIG.reviewers.map(k => { const r = rows[k];
+    return roleCard(k, `<div class="nums"><div>${r.calls}<small>호출</small></div><div>${r.calls?fmtSec(r.sec):'-'}<small>CLI 시간</small></div><div>${r.tokKnown?fmtTok(r.tok):'-'}<small>토큰</small></div></div><div class="meter"><i style="width:${r.calls/maxc*100}%"></i></div>${notConnHtml(k)}${k === 'codex' ? codexLimitHtml() : (k === 'gemini' ? geminiLimitHtml() : '')}`); }).join('');
+  $('roles').querySelectorAll('[data-ai]').forEach(d => d.onclick = e => { e.stopPropagation(); openPop(d.dataset.ai); });
+  const recent = history.slice(0,8).flatMap(h => Object.entries(h.who).map(([k,w]) => ({h,k,w}))).slice(0,9);
+  $('calls').innerHTML = recent.length ? recent.map((x,i) => { const lim = x.w.reason==='limit', bad = x.w.status==='failed';
+    return `<div class="call" data-id="${x.h.id}"><div><div class="a" style="color:${N[x.k].color}">${N[x.k].name}</div><div class="b">${esc(x.h.prompt.slice(0,24))}${x.h.prompt.length>24?'…':''}</div></div><div class="t"><div style="color:${lim?AMBER:bad?RED:'var(--green)'}">${lim?'한도 소진':bad?'실패':'완료'}</div>${fmtSec(x.w.sec||0)}${x.w.tokens?' · '+fmtTok(x.w.tokens)+' 토큰':''}<br>${ago(x.h.started)}</div></div>`; }).join('') : '<div class="hint">아직 호출 기록이 없어요.</div>';
+  $('calls').querySelectorAll('[data-id]').forEach(d => d.onclick = () => { selected = history.find(h => h.id === d.dataset.id); renderLeft(); });
+  const lastCodex = history.find(h => h.who.codex), codexLimit = lastCodex && lastCodex.who.codex.reason === 'limit';
+  const cl = (k, label, ok, note) => `<div class="conn ${ok?(note==='limit'?'lim':'ok'):'bad'}"><span><i></i>${label}</span><b>${ok?(note==='limit'?'한도 소진':'연결됨'):'없음'}</b></div>`;
+  $('conns').innerHTML = cl('codex','Codex CLI', conns.codex, codexLimit?'limit':'') + cl('gemini','Gemini (API)', conns.gemini, '') + cl('claude','Claude Code', conns.claude, '');
+}
+
+/* ===== 왼쪽: 미션 / 결과물 / 진행 기록 ===== */
+const TAGC = { req:'#6c9dff', codex:'#34e0b0', gemini:'#6c9dff', judge:'#ff8f5e', bad:RED, lim:AMBER };
+function renderLeft() {
+  const run = live || selected || history[0];
+  if (!run) { $('m-text').textContent = '아직 요청이 없습니다. 아래에 리뷰 요청을 적어 주세요.'; $('m-steps').innerHTML = ''; $('log').innerHTML = ''; return; }
+  const who = Object.entries(run.who), active = who.some(([,w]) => ['wait','running'].includes(w.status)), done = who.filter(([,w]) => !['wait','running'].includes(w.status)).length;
+  const bad = who.some(([,w]) => w.status==='failed'), lim = who.some(([,w]) => w.reason==='limit');
+  $('m-text').textContent = run.prompt;
+  const b = $('m-badge'); b.className = 'badge ' + (active?'run':lim?'lim':bad?'bad':'ok'); b.textContent = active?'진행':lim?'한도 소진':bad?'일부 실패':'완료';
+  const stepNames = ['요청','리뷰','비교','판단']; const cur = active ? 1 : 3;
+  $('m-steps').innerHTML = stepNames.map((s,i) => `<i class="${i<cur?'done':(i===cur?'now':'')}">${i+1}</i>`).join('');
+  $('m-meta').textContent = `${done}/${who.length}개 리뷰어 응답 · ${run.started.slice(5,16)}`;
+  $('feed').innerHTML = who.map(([k,w]) => { const l = w.reason==='limit' || w.reason==='noconn', label = w.reason==='noconn' ? '연결 필요' : (w.reason==='limit' ? '한도 소진' : {wait:'대기',running:'작업 중…',done:'완료',failed:'실패'}[w.status]);
+    return `<div class="item" style="--c:${l?AMBER:(w.status==='failed'?RED:N[k].color)}"><div class="n"><span>${N[k].name}</span><small>${label}${w.sec?' · '+w.sec+'초':''}</small></div><pre>${w.output?esc(w.output):'…'}</pre></div>`; }).join('');
+  const ev = [{tag:'사용자 확인', c:TAGC.req, who:'미션 요청', t:ago(run.started)}];
+  who.forEach(([k,w]) => ev.push({ tag:N[k].name.toUpperCase()+' 리뷰', c: w.reason==='limit'?TAGC.lim:(w.status==='failed'?TAGC.bad:N[k].color), who: w.status==='wait'||w.status==='running' ? '작업 중…' : (w.reason==='limit'?'사용 한도 소진':(w.status==='failed'?'실패':'완료'))+(w.sec?' · '+w.sec+'초':''), t:'' }));
+  if (!active) ev.push({tag:'HEAD 판단', c:TAGC.judge, who:'Claude가 의견을 보고 판단', t:''});
+  $('log').innerHTML = ev.reverse().map(e => `<div class="row" style="border-left:2px solid ${e.c}"><span class="tag" style="color:${e.c}">${e.tag}</span><span class="who">${esc(e.who)}</span><span class="ago">${e.t}</span></div>`).join('');
+  const last = history[0];
+  $('st-sub').textContent = last ? `마지막 미션 ${runFailed(last)?'일부 실패':'완료'} · ${ago(last.started)}` : '마지막 미션 기록 없음';
+}
+
+/* ===== 제목·상태 문구 ===== */
+function setHeader(kind) {
+  const m = {
+    idle:   ['세 AI가 지시를<br>기다리고 있습니다','대기','TRINITY CORE','세 AI가 지시를 기다리고 있습니다','대기'],
+    running:['리뷰어가 의견을<br>내고 있습니다','리뷰 중','TRINITY CORE','리뷰어를 병렬로 호출했습니다','작업 중'],
+    work:   ['Claude가 작업을<br>하고 있습니다','구현 중','TRINITY CORE','Claude가 구현·검증 중입니다','작업 중'],
+    done:   ['의견이 모였습니다.<br>Claude가 판단합니다','판단','TRINITY CORE','리뷰 완료 · 최종 판단은 Claude','완료'],
+    limit:  ['일부 리뷰어가<br>사용 한도를 다 썼습니다','한도 소진','TRINITY CORE','한도가 풀린 뒤 다시 호출하세요','완료'],
+    failed: ['일부 리뷰어가<br>응답하지 못했습니다','일부 실패','TRINITY CORE','실패한 호출은 오른쪽 기록에서 확인하세요','완료'],
+  }[kind];
+  $('st-title').innerHTML = m[0]; $('core-state').textContent = m[1]; $('core-sub').textContent = m[2]; $('core-sub2').textContent = m[3]; $('timer-s').textContent = m[4];
+}
+
+/* ===== 호출 흐름 ===== */
+$('chk').innerHTML = CONFIG.reviewers.map(k => `<label><input type="checkbox" id="w-${k}" checked> ${N[k].name}</label>`).join('');
+async function poll(id) {
+  const r = await (await fetch('/api/run/'+id)).json(); live = { id, ...r };
+  Object.entries(r.who).forEach(([k,w]) => state[k] = (w.reason==='limit' ? 'limit' : w.status==='wait' ? 'running' : w.status));
+  const active = Object.values(r.who).some(w => ['wait','running'].includes(w.status));
+  reviewActive = active; state.claude = active ? 'running' : 'done'; renderLeft();
+  if (active) { stage = 3; renderPipe(); setHeader('running'); setTimeout(() => poll(id), 1500); return; }
+  runEnd = Date.now(); stage = 4; renderPipe();
+  const vals = Object.values(r.who); setHeader(vals.some(w=>w.reason==='limit') ? 'limit' : vals.some(w=>w.status==='failed') ? 'failed' : 'done');
+  $('timer').textContent = mmss((runEnd-runStart)/1000); $('go').disabled = false; $('hint').textContent = '끝났습니다. 두 의견은 참고용이고 최종 판단은 Claude가 합니다.';
+  await loadAll(); live = null; selected = null; renderLeft();
+  setTimeout(() => { reviewActive = false; KEYS.forEach(k => state[k]='idle'); stage = -1; renderPipe(); setHeader('idle'); }, 9000);
+}
+$('go').onclick = async () => {
+  const who = CONFIG.reviewers.filter(k => $('w-'+k).checked), prompt = $('prompt').value.trim();
+  if (!prompt || !who.length) { $('hint').textContent = '요청 내용을 쓰고 리뷰어를 하나 이상 골라 주세요.'; return; }
+  $('go').disabled = true; $('hint').textContent = '호출 중입니다…';
+  CONFIG.reviewers.forEach(k => state[k] = who.includes(k) ? 'running' : 'idle'); state.claude = 'running'; reviewActive = true;
+  runStart = Date.now(); runEnd = 0; stage = 3; renderPipe(); setHeader('running'); selected = null;
+  live = { id:'', prompt, started:new Date().toISOString().slice(0,19).replace('T',' '), who:Object.fromEntries(who.map(k => [k,{status:'running',output:'',sec:0}])) }; renderLeft();
+  const r = await fetch('/api/review', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({prompt, who}) });
+  if (!r.ok) { $('go').disabled=false; $('hint').textContent='요청을 보내지 못했습니다.'; KEYS.forEach(k=>state[k]='idle'); reviewActive=false; stage=-1; live=null; renderPipe(); setHeader('idle'); renderLeft(); return; }
+  poll((await r.json()).id);
+};
+
+/* ===== AI 눌러서 모델 바꾸기 ===== */
+let popAi = null, popMsg = null;
+function usageBlock(k) {
+  if (k === 'claude') return `<div class="use"><div>${claudeInfo.ok?claudeInfo.percent+'%':'-'}<small>컨텍스트</small></div><div>${claudeInfo.ok?fmtTok(claudeInfo.tokens):'-'}<small>세션 토큰</small></div><div>${claudeInfo.ok&&claudeInfo.usd!=null?'$'+claudeInfo.usd.toFixed(1):'-'}<small>세션 비용</small></div></div>`;
+  const last = history.find(h => h.who[k]), lt = last && last.who[k].tokens;
+  return `<div class="use"><div>${lt?fmtTok(lt):'-'}<small>마지막 호출</small></div><div>${tokSum(k,'today')?fmtTok(tokSum(k,'today')):'-'}<small>오늘 토큰</small></div><div>${tokSum(k,'all')?fmtTok(tokSum(k,'all')):'-'}<small>전체 토큰</small></div></div>`;
+}
+function openPop(k) {
+  popAi = k; const m = models[k] || {}, n = N[k], p = $('pop'), o = orbs[k];
+  const opts = (m.options || []).map(x => `<button class="opt ${x.id===m.current?'on':''}" data-m="${esc(x.id)}"><span>${esc(x.name)}</span><small>${esc(x.id)}</small></button>`).join('');
+  p.style.setProperty('--cc', n.color);
+  p.innerHTML = `<h3><div><small>${n.brand} · ${n.tag}</small>${n.name}</div><button id="pop-x" title="닫기">×</button></h3>
+    <div class="cur">현재 모델 <b>${esc(m.current || '확인 중')}</b>${m.chosen ? ' <span style="color:var(--amber)">(직접 고름)</span>' : (m.changeable && k !== 'claude' ? ' <span>(기본값)</span>' : '')}</div>
+    ${m.changeable ? `<div class="opts">${opts || '<div class="msg" style="padding:8px">목록을 불러오지 못했어요. 아래에 직접 입력해 주세요.</div>'}</div>
+      <div class="custom"><input id="pop-in" placeholder="모델 이름 직접 입력" maxlength="80"><button id="pop-go">적용</button></div>
+      <div style="margin-top:8px"><button class="reset" id="pop-reset">기본값으로 되돌리기${m.default ? ' (' + esc(m.default) + ')' : ''}</button></div>` : `<div class="msg">${esc(m.note || '')}</div>`}
+    ${usageBlock(k)}
+    <div class="msg ${popMsg && popMsg.bad ? 'bad' : (popMsg ? 'ok' : '')}" id="pop-msg">${popMsg ? esc(popMsg.text) : (m.changeable ? (k==='claude' ? esc(m.note || '') : '고른 모델은 다음 호출부터 적용돼요. ' + (k==='codex' ? 'Codex 설정 파일은 바꾸지 않고, 호출할 때만 모델을 지정합니다.' : '목록에 있어도 계정에 따라 호출이 안 되는 모델이 있을 수 있어요.')) : '')}</div>`;
+  const W0 = $('center').clientWidth, H0 = $('center').clientHeight;
+  p.style.left = Math.max(8, Math.min(W0 - 308, o.x - 150)) + 'px'; p.style.top = Math.max(8, Math.min(H0 - p.offsetHeight - 8 || 0, o.y + o.r * 0.6)) + 'px';
+  p.hidden = false;
+  p.style.top = Math.max(8, Math.min(H0 - p.offsetHeight - 8, o.y - o.r)) + 'px';
+  $('pop-x').onclick = closePop;
+  p.querySelectorAll('[data-m]').forEach(b => b.onclick = () => setModel(k, b.dataset.m));
+  if ($('pop-go')) { $('pop-go').onclick = () => { const v = $('pop-in').value.trim(); if (v) setModel(k, v); };
+    $('pop-in').onkeydown = e => { if (e.key === 'Enter') $('pop-go').click(); }; $('pop-reset').onclick = () => setModel(k, ''); }
+}
+function closePop() { $('pop').hidden = true; popAi = null; popMsg = null; }
+async function setModel(k, model) {
+  const r = await fetch('/api/model', { method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({ai:k, model}) });
+  popMsg = r.ok ? { text: model ? (k==='claude' ? `Claude 모델을 ${model}(으)로 저장했어요. 새로 여는 세션부터 적용돼요.` : `${N[k].name} 모델을 ${model}(으)로 바꿨어요. 다음 호출부터 적용돼요.`) : '기본값으로 되돌렸어요.' } : { bad:true, text:'모델 이름 형식이 올바르지 않아요.' };
+  await loadModels(); renderRight(); if (popAi === k) openPop(k);
+}
+async function loadModels() { try { models = await (await fetch('/api/models')).json(); } catch (e) {} }
+function hitNode(ev) {
+  const r = cv.getBoundingClientRect(), x = ev.clientX - r.left, y = ev.clientY - r.top;
+  return KEYS.find(k => { const o = orbs[k]; return Math.hypot(x - o.x, y - (o.y + o.r*.55)) < o.r * 1.5 + 14 || (Math.abs(x - o.x) < 80 && y > o.y + o.r*1.5 && y < o.y + o.r*1.75 + 82); });
+}
+cv.addEventListener('click', e => {
+  if (theme === 'mission' || theme === 'retro' || theme === 'light') { const t = Targets.hit(e); if (t) { closePop(); Panel.open(t); return; } }   // 관제실: 목표물 클릭 → 상세 패널
+  const k = hitNode(e); if (k) { popMsg = null; Panel.close(); openPop(k); } else { closePop(); if (theme !== 'solar' && typeof Panel !== 'undefined') Panel.close(); } });
+cv.addEventListener('mousemove', e => { hoverK = hitNode(e) || null; const onT = (theme === 'mission' || theme === 'retro' || theme === 'light') && typeof Targets !== 'undefined' && Targets.hit(e); cv.style.cursor = (hoverK || onT) ? 'pointer' : 'default'; });   // 행성 위에 마우스를 올리면 천천히 돌아서 누르기 쉬움
+cv.addEventListener('mouseleave', () => { hoverK = null; });
+$('pop').addEventListener('click', e => e.stopPropagation());
+addEventListener('keydown', e => { if (e.key === 'Escape') closePop(); });
+
+/* ===== 불러오기 ===== */
+async function loadHist() { history = await (await fetch('/api/history')).json(); }
+async function loadConns() { try { conns = await (await fetch('/api/connections')).json(); } catch (e) {} }
+async function pollClaude() {
+  try { claudeInfo = await (await fetch('/api/claude')).json(); } catch (e) { claudeInfo = { ok:false }; }
+  if (!reviewActive) { const working = !!(claudeInfo.ok && claudeInfo.working); state.claude = working ? 'running' : 'idle';
+    if (!live) { stage = working ? 1 : -1; renderPipe(); setHeader(working ? 'work' : 'idle'); } }
+  renderRight();
+}
+/* ===== AI 연동(로그인) 창 — 앱 안에서 연결한 AI만 호출된다 ===== */
+let connState = null;
+const notConnHtml = k => (connState && connState[k] && connState[k].connected === false) ? `<div class="limsub" style="color:#f5b942;margin-top:8px">연결 안 됨 — 상단 '연동'에서 로그인하세요</div>` : '';
+function applyConn() {
+  if (!connState) return; const ok = k => connState[k] && connState[k].connected;
+  $('conndot').style.background = (ok('codex') && ok('gemini')) ? '#34e0b0' : ((ok('codex') || ok('gemini')) ? '#f5b942' : '#ff5c6c');
+  CONFIG.reviewers.forEach(k => { const cb = $('w-' + k); if (!cb) return; const was = cb.dataset.conn; cb.disabled = !ok(k); if (!ok(k)) cb.checked = false; else if (was === '0') cb.checked = true; cb.dataset.conn = ok(k) ? '1' : '0';
+    if (cb.parentElement) cb.parentElement.style.opacity = ok(k) ? '' : '.45'; });
+}
+const cmdBox = c => `<div class="cmd"><code>${esc(c)}</code><button class="cbtn cpy" data-c="${esc(c)}">복사</button></div>`;
+const isWin = () => !connState || !connState.env || connState.env.platform === 'win32';
+const nodeHint = () => (connState && connState.env && !connState.env.node) ? '<div class="cwarn">먼저 Node.js(https://nodejs.org)를 설치해야 이 명령이 돼요.</div>' : '';
+const claudeInstallCmd = () => isWin() ? 'irm https://claude.ai/install.ps1 | iex' : 'curl -fsSL https://claude.ai/install.sh | bash';
+function claudeGuide(c) {
+  if (!c.installed) return `<div class="cwarn">1단계 · 이 PC에 Claude Code가 없어요. 터미널(윈도우는 PowerShell)에 아래 명령을 붙여넣어 설치하세요.</div>${cmdBox(claudeInstallCmd())}<div class="cnote2">또는 npm이 있으면 <code>npm install -g @anthropic-ai/claude-code</code>. 설치 뒤 "상태 새로고침"을 누르세요.</div>`;
+  if (!c.logged_in) return `<div class="cwarn">2단계 · Claude Code는 있는데 로그인이 안 돼 있어요. 아래 버튼으로 창을 열어 안내대로 로그인하세요(내 Claude 계정).</div><div class="cb"><button class="cbtn" id="cl-login">Claude 로그인 (창이 열려요)</button></div><div class="cnote2">창이 안 열리면 터미널에서 <code>claude</code> 를 실행하세요.</div>`;
+  return `<div class="cnote2">Claude Code가 설치돼 있고 로그인돼 있어요. 평소처럼 Claude를 쓰면 사용량이 이 앱에 보여요(한도 %는 이 PC에서 알 수 없을 수 있어요).</div>`;
+}
+function renderConn() {
+  const s = connState; if (!s) return; const badge = (on, txt) => `<span class="cbadge ${on ? 'on' : ''}">${txt}</span>`;
+  const cx = s.codex, ge = s.gemini;
+  $('conn').innerHTML = `<div class="ch"><b>AI 연동</b><button id="conn-x" title="닫기">×</button></div>
+    <p class="cnote">이 앱은 <b>여기서 직접 연결한 AI만</b> 호출해요. 이 PC에 이미 있는 로그인·환경 변수는 몰래 쓰지 않습니다.</p>
+    <div class="crow"><div class="ct"><b>Codex</b> <small>OpenAI</small> ${cx.connected ? badge(true, { app:'연결됨 · 앱 로그인', system:'연결됨 · 이 PC의 기존 로그인', demo:'연결됨 · 데모' }[cx.source] || '연결됨') : badge(false, '연결 안 됨')}</div>
+      <div class="cb"><button class="cbtn" id="cx-login" ${cx.cli_installed ? '' : 'disabled'}>로그인 (창이 열려요)</button>${cx.source === 'app' ? '<button class="cbtn" id="cx-out">연결 해제</button>' : ''}<button class="cbtn" id="cx-ref">상태 새로고침</button></div>
+      <label class="copt"><input type="checkbox" id="cx-sys" ${cx.use_system ? 'checked' : ''} ${cx.system_available ? '' : 'disabled'}> 이 PC에 이미 로그인된 Codex 쓰기 <small>(내 PC일 때만 켜세요)</small></label>
+      ${cx.cli_installed ? '' : '<div class="cwarn">1단계 · Codex CLI가 이 PC에 없어요. 터미널에 아래 명령을 붙여넣어 설치한 뒤 "상태 새로고침"을 누르세요.</div>' + cmdBox('npm install -g @openai/codex') + nodeHint()}
+      ${cx.cli_installed && !cx.connected ? '<div class="cnote2">2단계 · "로그인" 버튼 → 열린 창에서 내 OpenAI(ChatGPT) 계정으로 로그인 → 창을 닫고 "상태 새로고침".</div>' : ''}</div>
+    <div class="crow"><div class="ct"><b>Gemini</b> <small>Google</small> ${ge.connected ? badge(true, { saved:'연결됨 · 키 저장됨', env:'연결됨 · 환경 변수', demo:'연결됨 · 데모' }[ge.source] || '연결됨') : badge(false, '연결 안 됨')}</div>
+      <div class="cb"><input type="password" id="ge-key" placeholder="Gemini API 키 붙여넣기" autocomplete="off" spellcheck="false"><button class="cbtn" id="ge-save">저장</button>${ge.source === 'saved' ? '<button class="cbtn" id="ge-out">연결 해제</button>' : ''}</div>
+      <label class="copt"><input type="checkbox" id="ge-env" ${ge.use_env ? 'checked' : ''} ${ge.env_available ? '' : 'disabled'}> 환경 변수 GEMINI_API_KEY 쓰기 <small>(내 PC일 때만 켜세요)</small></label>
+      <div class="cnote2">${ge.source === 'saved' ? (ge.protected ? '키는 이 PC의 윈도우 계정으로 암호화되어 저장돼요.' : '이 PC는 암호화를 쓸 수 없어 파일 권한으로만 보호돼요.') : '키는 저장 전에 Google에 한 번 확인하고, 저장된 뒤에는 화면에 다시 나오지 않아요.'}${ge.connected ? '' : '<br>키가 없으면 <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>에서 내 계정으로 무료 키를 만들 수 있어요(설치 필요 없음).'}</div></div>
+    <div class="crow"><div class="ct"><b>Claude</b> <small>Anthropic</small> ${s.claude.installed && s.claude.logged_in ? badge(true, '준비됨 · 사용량 읽는 중') : badge(false, s.claude.installed ? '로그인 필요' : '설치 필요')}</div>${claudeGuide(s.claude)}<div class="cnote2">${esc(s.claude.note)}</div></div>
+    <div class="cmsg" id="conn-msg"></div>`;
+  $('conn-x').onclick = () => { $('conn').hidden = true; };
+  document.querySelectorAll('#conn .cpy').forEach(b => b.onclick = async () => { try { await navigator.clipboard.writeText(b.dataset.c); b.textContent = '복사됨'; } catch (e) { b.textContent = '직접 선택해 복사'; } });
+  if ($('cl-login')) $('cl-login').onclick = () => connAct('claude_login', {}, '열린 창에서 Claude 로그인을 마친 뒤 "상태 새로고침"을 누르세요.');
+  $('cx-login').onclick = () => connAct('codex_login', {}, '열린 터미널 창에서 안내대로 로그인하세요. 끝나면 "상태 새로고침"을 누르세요.');
+  if ($('cx-out')) $('cx-out').onclick = () => connAct('codex_logout', {}, 'Codex 연결을 해제했어요.');
+  $('cx-ref').onclick = () => connAct('refresh', {}, '');
+  $('cx-sys').onchange = e => connAct('codex_system', { on:e.target.checked }, '');
+  $('ge-save').onclick = async () => { const v = $('ge-key').value.trim(); if (!v) { connMsg('키를 붙여넣어 주세요.', true); return; } connMsg('Google에 키를 확인하는 중…'); const ok = await connAct('gemini_save', { key:v }, 'Gemini 키를 저장했어요.'); if (ok && $('ge-key')) $('ge-key').value = ''; };
+  if ($('ge-out')) $('ge-out').onclick = () => connAct('gemini_clear', {}, 'Gemini 연결을 해제했어요.');
+  $('ge-env').onchange = e => connAct('gemini_env', { on:e.target.checked }, '');
+}
+const connMsg = (t, bad) => { const m = $('conn-msg'); if (m) { m.textContent = t; m.className = 'cmsg' + (bad ? ' bad' : ''); } };
+async function connAct(action, extra, okText) {
+  try { const r = action === 'refresh' ? await fetch('/api/connect') : await fetch('/api/connect', { method:'POST', headers:{ 'Content-Type':'application/json' }, body:JSON.stringify({ action, ...extra }) }), d = await r.json();
+    if (!r.ok) { connMsg(d.error || '실패했어요.', true); return false; } connState = d; renderConn(); applyConn(); renderRight(); connMsg(okText || ''); return true; }
+  catch (e) { connMsg('서버에 연결하지 못했어요.', true); return false; }
+}
+async function loadConn() { try { connState = await (await fetch('/api/connect')).json(); } catch (e) { return; } applyConn(); if (!$('conn').hidden) renderConn(); }
+$('connbtn').onclick = e => { e.stopPropagation(); const p = $('conn'); p.hidden = !p.hidden; if (!p.hidden) { renderConn(); loadConn(); } };
+document.addEventListener('click', e => { const p = $('conn'); if (!p.hidden && !p.contains(e.target) && e.target !== $('connbtn') && !$('connbtn').contains(e.target)) p.hidden = true; });
+async function loadAll() { await Promise.all([loadHist(), loadConns(), loadModels(), pollClaude(), loadConn()]); renderRight(); renderLeft();
+  try { if (connState && !connState.gemini.connected && !connState.codex.connected && !sessionStorage.getItem('conn-seen')) { sessionStorage.setItem('conn-seen', '1'); $('conn').hidden = false; renderConn(); } } catch (e) { /* 저장소가 막혀 있어도 동작 */ } }
+$('refresh').onclick = loadAll;
+$('tabs').querySelectorAll('button').forEach(b => b.onclick = () => { tab = b.dataset.t; $('tabs').querySelectorAll('button').forEach(x => x.classList.toggle('on', x===b)); renderRight(); });
+setInterval(() => { const d = new Date(); $('clock').textContent = [d.getHours(),d.getMinutes(),d.getSeconds()].map(pad).join(':'); if (runStart && !runEnd) $('timer').textContent = mmss((Date.now()-runStart)/1000); }, 500);
+setInterval(pollClaude, 3000);
+
+function setTheme(t) {
+  theme = t; const B = document.body.classList; flows = [];
+  B.toggle('mission', t === 'mission' || t === 'light' || t === 'retro'); B.toggle('light', t === 'light'); B.toggle('retro', t === 'retro' || t === 'mission'); B.toggle('ocean', t === 'ocean'); B.toggle('solar', t === 'solar');
+  const pal = { mission:[[57,255,106], '#39ff6a', '#c8ffc8'], light:[[40,60,90], '#1f6fb2', '#1b2430'], retro:[[57,255,106], '#39ff6a', '#c8ffc8'] }[t];   // 관제실 = 레트로 초록
+  if (pal) { ACC = pal[0]; AMB = pal[1]; TXT = pal[2]; }
+  $('dd-menu').querySelectorAll('button').forEach(b => { const on = b.dataset.th === t; b.classList.toggle('on', on); if (on) $('dd-cur').textContent = b.querySelector('b').textContent; });
+  try { localStorage.setItem('trinity-theme', t); } catch (e) { /* 저장 안 돼도 화면은 동작 */ }
+  document.title = ({ mission:'MISSION CONTROL', ocean:'OCEAN', light:'LIGHT', retro:'RETRO TERMINAL' }[t] || 'TRINITY') + ' · AI 팀 관제';
+}
+const ddClose = () => { $('dd-menu').hidden = true; $('dd-btn').setAttribute('aria-expanded', 'false'); };
+$('dd-btn').onclick = e => { e.stopPropagation(); const open = $('dd-menu').hidden; $('dd-menu').hidden = !open; $('dd-btn').setAttribute('aria-expanded', String(open)); };   // 누르면 아래로 펼쳐짐
+$('dd-menu').querySelectorAll('button').forEach(b => b.onclick = () => { setTheme(b.dataset.th); ddClose(); });                                                  // 고른 것만 바뀜
+document.addEventListener('click', e => { if (!$('dd').contains(e.target)) ddClose(); });
+addEventListener('keydown', e => { if (e.key === 'Escape') ddClose(); });
+try { const saved = localStorage.getItem('trinity-theme'); if (saved === 'ocean' || saved === 'mission') setTheme(saved); else if (saved === 'retro') setTheme('mission'); else setTheme('solar'); } catch (e) {}
+{ const q = new URLSearchParams(location.search).get('theme'); if (['solar', 'ocean', 'mission'].includes(q)) setTheme(q); }      // 주소의 ?theme= 로 디자인을 바로 지정(스크린샷·공유용)
+layout(); renderPipe(); frame(); loadAll();
+</script>
+</body>
+</html>
