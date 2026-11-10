@@ -8,10 +8,10 @@
 | 1. 기반 | AI 연동(Gemini 키 암호화 저장, Codex 앱 전용 로그인, 설치·로그인 안내) | `connect.py`, `tests/test_connect.py` | 11/10 | 올림 |
 | 1. 기반 | 개인정보 점검 도구와 시험 | `tools/check_privacy.py`, `tests/test_privacy.py` | 11/10 | 올림 |
 | 1. 기반 | README·업로드 계획·WBS | `README.md`, `docs/` | 11/10 | 올림 |
-| 2. 서버 | 리뷰어 병렬 호출, 기록, 한도 표시, Claude 사용량 읽기, 앱처럼 실행 | `server.py`, `launch.pyw` | 예정 | 대기 |
-| 3. 화면 | 3단 대시보드, 디자인 3종(태양계·심해·관제실), 관제실 신호 처리 | `index.html` | 예정 | 대기 |
-| 4. 시연 | 데모 모드, 스크린샷 도구, 공개용 복사 도구 | `tools/demo_data.py`, `tools/shoot.py`, `tools/make_release.py`, `deliverables/screenshots/` | 예정 | 대기 |
-| 5. 문서 | 산출물(PDF·엑셀·PPT)과 README 정리 | `deliverables/`, `tools/build_deliverables.py` | 예정 | 대기 |
+| 2. 서버 | 리뷰어 병렬 호출, 기록, 한도 표시, Claude 사용량 읽기, 앱처럼 실행 | `server.py`, `launch.pyw` | 11/10 | 올림 |
+| 3. 화면 | 3단 대시보드, 디자인 3종(태양계·심해·관제실), 관제실 신호 처리 | `index.html` | 11/10 | 올림 |
+| 4. 시연 | 데모 모드, 스크린샷 도구, 공개용 복사 도구 | `tools/demo_data.py`, `tools/shoot.py`, `tools/make_release.py`, `deliverables/screenshots/` | 11/10 | 올림 |
+| 5. 문서 | 산출물(PDF·엑셀·PPT)과 README 정리 | `deliverables/`, `tools/build_deliverables.py` | 11/10 | 올림 |
 
 ## 올리기 전 매번 하는 점검
 1. `python -I tools/check_privacy.py . --tracked` 로 올라갈 파일에 개인정보가 없는지 확인

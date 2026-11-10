@@ -54,7 +54,7 @@ set AI_CONSOLE_DATA=<그 폴더>& set AI_CONSOLE_DEMO=1& python -I server.py    
 ## 시험
 ```
 python -I tests/test_auth.py       # 로그인 흐름 19개 (임시 폴더·다른 포트에서 따로 실행)
-python -I tests/test_connect.py    # AI 연동 24개 (연결 전 호출 차단·키 암호화)
+python -I tests/test_connect.py    # AI 연동 26개 (연결 전 호출 차단·키 암호화)
 python -I tests/test_privacy.py    # 개인정보 점검 도구 15개 (나쁜 입력을 잡아내는지)
 ```
 
