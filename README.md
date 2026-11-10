@@ -1,4 +1,4 @@
-# AI 팀 관제 (AI Team Console)
+<p align="center"><img src="docs/images/title.svg" alt="AI TEAM CONSOLE" width="85%"></p>
 
 Claude, Codex, Gemini를 한 화면에서 부르고 지켜보는 내 PC용 관제 화면입니다.
 
