@@ -14,7 +14,7 @@ ROOT = Path(__file__).resolve().parent.parent
 DEST = ROOT / "release" / "ai-team-console"
 FILES = ["server.py", "auth.py", "pages.py", "connect.py", "index.html", "launch.pyw", "README.md", ".gitignore", "assets/icon.ico",
          "tests/test_auth.py", "tests/test_privacy.py", "tests/test_connect.py", "docs/GIT_UPLOAD_PLAN.md", "docs/WBS.md", "docs/NOTICE.md",
-         "tools/check_privacy.py", "tools/make_release.py", "tools/demo_data.py", "tools/shoot.py", "tools/make_gif.py", "tools/build_deliverables.py", "tools/private_terms.example.txt"]
+         "tools/check_privacy.py", "tools/make_release.py", "tools/demo_data.py", "tools/shoot.py", "tools/make_gif.py", "tools/build_deliverables.py", "tools/build_wbs.py", "tools/private_terms.example.txt"]
 DIRS = [("deliverables", {".7z", ".zip", ".html"}), ("docs/images", set())]          # 산출물(PDF·엑셀·PPT·스크린샷) — 압축 파일·임시 파일은 제외
 
 
