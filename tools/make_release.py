@@ -15,7 +15,7 @@ DEST = ROOT / "release" / "ai-team-console"
 FILES = ["server.py", "auth.py", "pages.py", "connect.py", "index.html", "launch.pyw", "README.md", ".gitignore", "assets/icon.ico",
          "tests/test_auth.py", "tests/test_privacy.py", "tests/test_connect.py", "docs/GIT_UPLOAD_PLAN.md", "docs/WBS.md",
          "tools/check_privacy.py", "tools/make_release.py", "tools/demo_data.py", "tools/shoot.py", "tools/build_deliverables.py", "tools/private_terms.example.txt"]
-DIRS = [("deliverables", {".7z", ".zip", ".html"})]          # 산출물(PDF·엑셀·PPT·스크린샷) — 압축 파일·임시 파일은 제외
+DIRS = [("deliverables", {".7z", ".zip", ".html"}), ("docs/images", set())]          # 산출물(PDF·엑셀·PPT·스크린샷) — 압축 파일·임시 파일은 제외
 
 
 def _unlock(func, path, _exc):
