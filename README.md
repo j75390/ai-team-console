@@ -24,7 +24,6 @@ Claude, Codex, Gemini를 한 화면에서 부르고 지켜보는 내 PC용 관�
 13. [트러블슈팅](#13-트러블슈팅)
 14. [향후 개선 계획](#14-향후-개선-계획)
 15. [정리 자료](#15-정리-자료)
-16. [실행 방법과 폴더 구조](#16-실행-방법과-폴더-구조)
 
 ---
 
@@ -430,27 +429,3 @@ Codex CLI나 Claude Code가 없는 PC에서 연동 창을 열어도 무엇을 �
 [PDF](deliverables/AI관제_발표자료_디자인판.pdf) · [PPT](deliverables/AI관제_발표자료_디자인판.pptx)
 
 <img src="docs/images/slide-cover.png" width="24%"> <img src="docs/images/slide-architecture.png" width="24%"> <img src="docs/images/slide-code.png" width="24%"> <img src="docs/images/slide-test.png" width="24%">
-
-## 16. 실행 방법과 폴더 구조
-
-Python 3.10 이상과 Chrome 또는 Edge가 있으면 됩니다. 설치할 패키지는 없습니다.
-
-```bash
-python launch.pyw          # 서버를 숨겨서 켜고 앱 창으로 엽니다 (창을 닫으면 서버도 곧 꺼집니다)
-python -I server.py        # 서버만 켜려면, 브라우저에서 http://127.0.0.1:8765
-```
-
-처음 열면 계정 만들기 화면이 나옵니다. 아이디(3~32자)와 비밀번호(8자 이상)를 정하면 되고 기본 계정은 없습니다. 비밀번호를 잊으면 `data/auth.json`을 지우고 다시 정하면 됩니다. 그다음 상단 연동에서 Gemini 키를 붙여넣고, Codex는 로그인 버튼으로 로그인합니다. 연동 없이도 화면은 열리고 연결 안 된 AI는 "연결 안 됨"으로 표시됩니다.
-
-```
-server.py        서버, 호출·기록·API, 로그인 관문
-auth.py          로그인(PBKDF2, 세션, 잠금)
-pages.py         로그인·첫 설정 화면
-connect.py       AI 연동(키 암호화 저장, Codex 앱 전용 로그인)
-index.html       관제 화면(Canvas 2D)
-launch.pyw       앱처럼 실행(서버 숨김 기동 + 앱 창)
-tests/           자동 시험
-tools/           데모 데이터, 스크린샷, 개인정보 점검, 깨끗한 사본, 산출물 생성
-deliverables/    산출물(PDF·엑셀), 발표 PPT, 스크린샷
-docs/            업로드 계획, WBS, README용 그림
-```
